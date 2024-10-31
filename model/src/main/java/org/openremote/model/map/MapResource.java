@@ -19,6 +19,7 @@
  */
 package org.openremote.model.map;
 
+// import io.undertow.server.HttpServerExchange;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -70,4 +71,13 @@ public interface MapResource {
     @Path("tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getTile", summary = "Retrieve the vector tile data for Mapbox GL")
     byte[] getTile(@PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+
+    // /**
+    //  * Gets vector tile data for Mapbox GL
+    //  */
+    // @GET
+    // @Produces("application/vnd.mapbox-vector-tile")
+    // @Path("external/tile/{zoom}/{column}/{row}")
+    // @Operation(operationId = "getExternalTile", summary = "Retrieve the vector tile data for Mapbox GL")
+    // byte[] getExternalTile(HttpServerExchange exchange);
 }

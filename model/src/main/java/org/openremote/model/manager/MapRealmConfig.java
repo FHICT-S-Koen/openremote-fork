@@ -29,5 +29,6 @@ public class MapRealmConfig {
     protected int maxZoom;
     protected boolean boxZoom;
     protected String geocodeUrl;
+    protected String mapUrl;
     protected GeoJsonConfig geoJson;
 }

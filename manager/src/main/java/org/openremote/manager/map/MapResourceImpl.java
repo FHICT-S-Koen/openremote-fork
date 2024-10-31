@@ -20,7 +20,13 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.handlers.ResponseCodeHandler;
+import io.undertow.server.handlers.proxy.ProxyHandler;
+
 import org.openremote.container.web.WebResource;
+import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapRealmConfig;
@@ -28,6 +34,8 @@ import org.openremote.model.map.MapResource;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.UriBuilder;
+
 import java.io.IOException;
 import java.util.Map;
 
@@ -71,4 +79,60 @@ public class MapResourceImpl extends WebResource implements MapResource {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
         }
     }
+
+    // @Override
+    // public byte[] getExternalTile(HttpServerExchange exchange) {
+    //     LOG.info("TESTTING CALL PROXY WRAPPER");
+    //     // consider caching proxy handlers in an array
+
+    //     UriBuilder tileServerUri = UriBuilder.fromPath("/")
+    //         .scheme("http")
+    //         .host(tileServerHost)
+    //         .port(tileServerPort);
+
+    //     @SuppressWarnings("deprecation")
+    //     ProxyHandler proxyHandler = new ProxyHandler(
+    //             new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
+    //             getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT, OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
+    //             ResponseCodeHandler.HANDLE_404
+    //     ).setReuseXForwarded(true);
+
+    //     // Change request path to match what the tile server expects
+    //     String path = exchange.getRequestPath().substring(RASTER_MAP_TILE_PATH.length());
+
+    //     exchange.setRequestURI(TILESERVER_TILE_PATH + path, true);
+    //     exchange.setRequestPath(TILESERVER_TILE_PATH + path);
+    //     exchange.setRelativePath(TILESERVER_TILE_PATH + path);
+    //     proxyHandler.handleRequest(exchange);
+    //     proxyHandler.handleRequest(exchange);
+
+    //     proxyHandler.;
+        
+    //     // // webService.getRequestHandlers().add(0, pathStartsWithHandler("Custom Map Tile Proxy", "/custom_map/tile", exchange -> {
+    //     // //     LOG.info("TESTTING CALL PROXY WRAPPER");
+    //     // //     // consider caching proxy handlers in an array
+
+    //     // //     getRequestRealmName()
+
+    //     // //     UriBuilder tileServerUri = UriBuilder.fromPath("/")
+    //     // //     .scheme("http")
+    //     // //     .host(tileServerHost)
+    //     // //     .port(tileServerPort);
+
+    //     // //     @SuppressWarnings("deprecation")
+    //     // //     ProxyHandler proxyHandler = new ProxyHandler(
+    //     // //             new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
+    //     // //             getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT, OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
+    //     // //             ResponseCodeHandler.HANDLE_404
+    //     // //     ).setReuseXForwarded(true);
+
+    //     // //     // Change request path to match what the tile server expects
+    //     // //     String path = exchange.getRequestPath().substring(RASTER_MAP_TILE_PATH.length());
+
+    //     // //     exchange.setRequestURI(TILESERVER_TILE_PATH + path, true);
+    //     // //     exchange.setRequestPath(TILESERVER_TILE_PATH + path);
+    //     // //     exchange.setRelativePath(TILESERVER_TILE_PATH + path);
+    //     // //     proxyHandler.handleRequest(exchange);
+    //     // // }));
+    // }
 }
