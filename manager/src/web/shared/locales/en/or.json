@@ -779,6 +779,9 @@
     "minZoom": "Minimal zoom",
     "geoJson": "GeoJSON",
     "geoJsonDescription": "Customize the GeoJSON; add points, lines and polygons to be drawn on the map.",
+    "configureCustomMap": "Custom map",
+    "configureCustomMapDescription": "Configure a custom map.",
+    "configureMapServer": "Map server",
     "deleteMapCustomization": "Delete map settings",
     "deleteMapCustomizationConfirm":"Are you sure you want to delete this Map customization?",
     "addMapCustomization" : "Add map settings"
