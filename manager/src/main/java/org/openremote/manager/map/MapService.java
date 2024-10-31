@@ -37,6 +37,7 @@ import org.openremote.model.util.ValueUtil;
 import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -78,6 +79,8 @@ public class MapService implements ContainerService {
     protected ObjectNode mapConfig;
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
+
+    private final String externalTileServerPath = "/external_map/tile";
 
     public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
@@ -210,10 +213,43 @@ public class MapService implements ContainerService {
         String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
 
+        WebService webService = container.getService(WebService.class);
+
+        webService.getRequestHandlers().add(0, pathStartsWithHandler("External Map Tile Proxy", externalTileServerPath, exchange -> {
+            final ObjectNode settings = (metadata.isValid() && !mapConfig.isEmpty()) 
+                ? mapConfig.deepCopy()
+                : mapConfig.objectNode();
+
+            // URL url = new URL(settings.get("sources").get("vector_tiles").get("url").textValue());
+            URL url = new URL(settings.get("options").get("default").get("mapUrl").textValue());
+            // TODO: handle this determination differently
+            if (!url.getProtocol().startsWith("http")) {
+                return;
+            }
+
+            UriBuilder tileServerUri = UriBuilder.fromPath(url.getPath())
+                    .scheme("http")
+                    .host(url.getHost())
+                    .port(url.getPort());
+
+            @SuppressWarnings("deprecation")
+            ProxyHandler proxyHandler = new ProxyHandler(
+                    new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
+                    0, // TODO: MAKE CONFIGURABLE
+                    ResponseCodeHandler.HANDLE_404
+            ).setReuseXForwarded(true);
+    
+            // TODO: ADD CHECK TO AVOID CALLING THE API ITSELF
+
+            // Change request path to match what the tile server expects
+            String path = exchange.getRequestPath().substring(externalTileServerPath.length());
+            exchange.setRequestURI(path, true);
+            exchange.setRequestPath(path);
+            exchange.setRelativePath(path);
+            proxyHandler.handleRequest(exchange);
+        }));
+
         if (!TextUtil.isNullOrEmpty(tileServerHost)) {
-
-            WebService webService = container.getService(WebService.class);
-
             UriBuilder tileServerUri = UriBuilder.fromPath("/")
                     .scheme("http")
                     .host(tileServerHost)
@@ -332,7 +368,6 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
-                    vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
@@ -346,10 +381,23 @@ public class MapService implements ContainerService {
                                 vectorTilesObj.replace("center", centerArray);
                             }));
 
-                    ArrayNode tilesArray = mapConfig.arrayNode();
-                    String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-                    tilesArray.insert(0, tileUrl);
-                    vectorTilesObj.replace("tiles", tilesArray);
+                    JsonNode defaultRealm = settings.get("options").get("default");
+                    if (defaultRealm.hasNonNull("mapUrl") && defaultRealm.get("mapUrl").textValue().startsWith("http")) {
+                        vectorTilesObj.remove("url");
+
+                        // TODO: maybe add proxy option to configure whether the requets needs to be proxied to the manager api first
+                        ArrayNode tilesArray = mapConfig.arrayNode();
+                        String tileUrl = UriBuilder.fromUri(host).replacePath(externalTileServerPath).build().toString() + "/{z}/{x}/{y}";
+                        tilesArray.insert(0, tileUrl);
+                        vectorTilesObj.replace("tiles", tilesArray);
+                    } else {
+                        vectorTilesObj.remove("url");
+    
+                        ArrayNode tilesArray = mapConfig.arrayNode();
+                        String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
+                        tilesArray.insert(0, tileUrl);
+                        vectorTilesObj.replace("tiles", tilesArray);
+                    }
 
 //                    vectorTilesObj.put(
 //                            "url",

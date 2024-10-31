@@ -35,7 +35,7 @@ import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
 import {OrConfPanel} from "../components/configuration/or-conf-panel";
 import {Input} from "@openremote/or-rules/lib/flow-viewer/services/input";
-import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import { InputType, OrInputChangedEvent } from "@openremote/or-mwc-components/or-mwc-input";
 
 declare const CONFIG_URL_PREFIX: string;
 
@@ -272,6 +272,23 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
                             ${when(this.mapConfig, () => html`
+                               <div class="custom-group">
+                                    <div class="subheader">${i18next.t("configuration.configureCustomMap")}</div>
+                                    <span>${i18next.t("configuration.configureCustomMapDescription")}</span>
+                                    <div class="input" style="height: 56px; margin-bottom: 10px;">
+                                        <or-mwc-input outlined .value="${this.mapConfig?.['default']?.mapUrl}" .type="${InputType.URL}" id="configure-map-server"
+                                                        .label="${i18next.t("configuration.configureMapServer")}"
+                                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                                for (const key of Object.keys(this.mapConfig)) {
+                                                                    this.mapConfig[key].mapUrl = e.detail.value;
+                                                                }
+                                                                console.log(this.mapConfig);
+                                                                this.requestUpdate("map");
+                                                                this.mapConfigChanged = true;
+                                                            }}"
+                                            ></or-mwc-input>
+                                    </div>
+                                <div>
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                                @change="${() => { this.mapConfigChanged = true; }}"
                                 ></or-conf-panel>
