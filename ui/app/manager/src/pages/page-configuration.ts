@@ -29,7 +29,7 @@ import "@openremote/or-components/or-collapsible-panel";
 import "@openremote/or-mwc-components/or-mwc-input";
 import "../components/configuration/or-conf-json";
 import "../components/configuration/or-conf-panel";
-import {ManagerAppConfig, MapRealmConfig, Realm} from "@openremote/model";
+import {ManagerAppConfig, MapConfig, Realm} from "@openremote/model";
 import {i18next} from "@openremote/or-translate";
 import "@openremote/or-components/or-loading-indicator";
 import {OrConfRealmCard} from "../components/configuration/or-conf-realm/or-conf-realm-card";
@@ -142,6 +142,46 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                     display: none;
                 }
             }
+
+            /* Global map settings */
+
+            .subheader {
+                padding: 10px 0 4px;
+                font-weight: bolder;
+            }
+
+            .global-settings-container {
+                display: flex;
+            }
+
+            .custom-server-group {
+                width: 50%;
+            }
+
+            .custom-tile-group {
+                width: 50%;
+                padding-left: 12px;
+            }
+
+            @media screen and (max-width: 768px) {
+                .custom-tile-group, .custom-server-group {
+                    width: 100%;
+                    padding: unset;
+                }
+                .global-settings-container {
+                    display: block;
+                }
+            }
+
+            .input {
+                width: 100%;
+                max-width: 800px;
+                padding: 10px 0;
+            }
+
+            .input or-mwc-input:not([icon]) {
+                width: 80%;
+            }
         `;
     }
 
@@ -153,7 +193,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     public managerConfiguration?: ManagerAppConfig;
 
     @state()
-    public mapConfig?: {[id: string]: any};
+    public mapConfig?: MapConfig;
 
     @state()
     protected realms?: Realm[];
@@ -272,23 +312,52 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                         </or-panel>
                         <or-panel .heading="${i18next.t("configuration.mapSettings").toUpperCase()}">
                             ${when(this.mapConfig, () => html`
-                               <div class="custom-group">
-                                    <div class="subheader">${i18next.t("configuration.configureCustomMap")}</div>
-                                    <span>${i18next.t("configuration.configureCustomMapDescription")}</span>
-                                    <div class="input" style="height: 56px; margin-bottom: 10px;">
-                                        <or-mwc-input outlined .value="${this.mapConfig?.['default']?.mapUrl}" .type="${InputType.URL}" id="configure-map-server"
+                                <div class="global-settings-container">
+                                    <div class="custom-server-group">
+                                        <div class="subheader">${i18next.t("configuration.configureCustomMap")}</div>
+                                        <span>${i18next.t("configuration.configureCustomMapDescription")}</span>
+                                        <or-mwc-input class="input" outlined .value="${this.mapConfig.sources?.['external']?.url}" 
+                                                        .type="${InputType.URL}"
                                                         .label="${i18next.t("configuration.configureMapServer")}"
+                                                        placeholder="https://api.example.com/tileset/{z}/{x}/{y}"
                                                         @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
-                                                                for (const key of Object.keys(this.mapConfig)) {
-                                                                    this.mapConfig[key].mapUrl = e.detail.value;
+                                                                if (e.detail.value) {
+                                                                    this.mapConfig.sources['external'] = { 
+                                                                        type: 'vector', 
+                                                                        url: e.detail.value
+                                                                    };
+                                                                } else {
+                                                                    delete this.mapConfig.sources['external'];
                                                                 }
-                                                                console.log(this.mapConfig);
                                                                 this.requestUpdate("map");
                                                                 this.mapConfigChanged = true;
                                                             }}"
-                                            ></or-mwc-input>
+                                        ></or-mwc-input>
+                                        <div class="subheader">${i18next.t("configuration.configureApiKey")}</div>
+                                        <span>${i18next.t("configuration.configureApiKeyDescription")}</span>
+                                        <or-mwc-input class="input" outlined 
+                                                        .type="${InputType.PASSWORD}"
+                                                        .label="${i18next.t("configuration.configureApiKey")}"
+                                                        @or-mwc-input-changed="${(e: OrInputChangedEvent) => {
+                                                            }}"
+                                        ></or-mwc-input>
+                                        <div class="subheader">${i18next.t("configuration.enableMapServerProxy")}</div>
+                                        <span>${i18next.t("configuration.enableMapServerProxyDescription")}</span>
+                                        <or-mwc-input style="padding: 0;" disabled 
+                                            .type="${InputType.SWITCH}"
+                                        ></or-mwc-input>
                                     </div>
-                                <div>
+
+                                    <div class="custom-tile-group">
+                                        <div class="subheader">${i18next.t("configuration.configureMapTiles")}</div>
+                                        <span>${i18next.t("configuration.configureMapTilesDescription")}</span>
+                                        <div class="input"> 
+                                            <or-file-uploader disabled label="Upload map tiles" />
+                                        </div>
+                                    </div>
+                                </div>
+                                <hr style="border: none; border-top: 1px solid #bbb; margin: 0; margin-bottom: 10px">
+                                
                                 <or-conf-panel id="mapConfig-panel" .config="${this.mapConfig}" .realmOptions="${realmOptions}"
                                                @change="${() => { this.mapConfigChanged = true; }}"
                                 ></or-conf-panel>
@@ -319,16 +388,17 @@ export class PageConfiguration extends Page<AppStateKeyed> {
         return await response.json() as ManagerAppConfig;
     }
 
-    protected async getMapConfig(): Promise<{[id: string]: any}> {
+    protected async getMapConfig(): Promise<MapConfig> {
         const response = await manager.rest.api.MapResource.getSettings();
-        return (response.data.options as {[id: string]: any});
+        const { options, sources } = response.data;
+        return { options, sources };
     }
 
     protected async getAccessibleRealms(): Promise<Realm[]> {
         return (await manager.rest.api.RealmResource.getAccessible()).data;
     }
 
-    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: {[p: string]: MapRealmConfig}) {
+    protected saveAllConfigs(config: ManagerAppConfig, mapConfig: MapConfig) {
         this.loading = true;
         let managerPromise;
 
