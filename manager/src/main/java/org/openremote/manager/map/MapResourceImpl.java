@@ -23,12 +23,22 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
-import java.util.Map;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.Enumeration;
+import java.util.zip.GZIPInputStream;
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
@@ -41,7 +51,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     }
 
     @Override
-    public Object saveSettings(RequestParams requestParams, Map<String, MapRealmConfig> mapConfig) {
+    public Object saveSettings(RequestParams requestParams, MapConfig mapConfig) {
         return mapService.saveMapConfig(mapConfig);
     }
 
@@ -71,59 +81,49 @@ public class MapResourceImpl extends WebResource implements MapResource {
         }
     }
 
-    // @Override
-    // public byte[] getExternalTile(HttpServerExchange exchange) {
-    //     LOG.info("TESTTING CALL PROXY WRAPPER");
-    //     // consider caching proxy handlers in an array
+    @Override
+    public void getExternalTile(@Context HttpServletRequest request, @Context HttpServletResponse response, int zoom, int column, int row) {
+        URI uri = mapService.getExternalMapTileUri(zoom, column, row);
 
-    //     UriBuilder tileServerUri = UriBuilder.fromPath("/")
-    //         .scheme("http")
-    //         .host(tileServerHost)
-    //         .port(tileServerPort);
-
-    //     @SuppressWarnings("deprecation")
-    //     ProxyHandler proxyHandler = new ProxyHandler(
-    //             new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
-    //             getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT, OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
-    //             ResponseCodeHandler.HANDLE_404
-    //     ).setReuseXForwarded(true);
-
-    //     // Change request path to match what the tile server expects
-    //     String path = exchange.getRequestPath().substring(RASTER_MAP_TILE_PATH.length());
-
-    //     exchange.setRequestURI(TILESERVER_TILE_PATH + path, true);
-    //     exchange.setRequestPath(TILESERVER_TILE_PATH + path);
-    //     exchange.setRelativePath(TILESERVER_TILE_PATH + path);
-    //     proxyHandler.handleRequest(exchange);
-    //     proxyHandler.handleRequest(exchange);
-
-    //     proxyHandler.;
+        if (uri.equals(null)) {
+            throw new WebApplicationException(Response.Status.PROXY_AUTHENTICATION_REQUIRED);
+        }
         
-    //     // // webService.getRequestHandlers().add(0, pathStartsWithHandler("Custom Map Tile Proxy", "/custom_map/tile", exchange -> {
-    //     // //     LOG.info("TESTTING CALL PROXY WRAPPER");
-    //     // //     // consider caching proxy handlers in an array
+        try {
+            HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+            connection.setRequestMethod("GET");
 
-    //     // //     getRequestRealmName()
+            Enumeration<String> headerNames = request.getHeaderNames();
+            while (headerNames.hasMoreElements()) {
+                String headerName = headerNames.nextElement();
+                connection.setRequestProperty(headerName, request.getHeader(headerName));
+            }
 
-    //     // //     UriBuilder tileServerUri = UriBuilder.fromPath("/")
-    //     // //     .scheme("http")
-    //     // //     .host(tileServerHost)
-    //     // //     .port(tileServerPort);
+            int statusCode = connection.getResponseCode();
+            response.setStatus(statusCode);
 
-    //     // //     @SuppressWarnings("deprecation")
-    //     // //     ProxyHandler proxyHandler = new ProxyHandler(
-    //     // //             new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
-    //     // //             getInteger(container.getConfig(), OR_MAP_TILESERVER_REQUEST_TIMEOUT, OR_MAP_TILESERVER_REQUEST_TIMEOUT_DEFAULT),
-    //     // //             ResponseCodeHandler.HANDLE_404
-    //     // //     ).setReuseXForwarded(true);
+            String contentType = connection.getContentType();
+            response.setContentType(contentType);
 
-    //     // //     // Change request path to match what the tile server expects
-    //     // //     String path = exchange.getRequestPath().substring(RASTER_MAP_TILE_PATH.length());
+            String encoding = connection.getContentEncoding();
+            InputStream inputStream;
+            // TODO: GZIP not applied correctly
+            if ("gzip".equalsIgnoreCase(encoding)) {
+                inputStream = new GZIPInputStream(connection.getInputStream());
+            } else {
+                inputStream = connection.getInputStream();
+            }
 
-    //     // //     exchange.setRequestURI(TILESERVER_TILE_PATH + path, true);
-    //     // //     exchange.setRequestPath(TILESERVER_TILE_PATH + path);
-    //     // //     exchange.setRelativePath(TILESERVER_TILE_PATH + path);
-    //     // //     proxyHandler.handleRequest(exchange);
-    //     // // }));
-    // }
+            try (OutputStream outputStream = response.getOutputStream()) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytesRead);
+                }
+            }
+
+        } catch (IOException error) {
+            throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
 }

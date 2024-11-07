@@ -32,13 +32,11 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
-import org.openremote.model.manager.MapRealmConfig;
+import org.openremote.model.manager.MapConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
 import java.net.URI;
-import java.net.URL;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.*;
 import java.util.HashMap;
@@ -74,13 +72,12 @@ public class MapService implements ContainerService {
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
 
-    private final String externalTileServerPath = "/external_map/tile";
-
-    public ObjectNode saveMapConfig(Map<String, MapRealmConfig> mapConfiguration) throws RuntimeException {
+    public ObjectNode saveMapConfig(MapConfig mapConfiguration) throws RuntimeException {
         if (mapConfig == null) {
             mapConfig = ValueUtil.JSON.createObjectNode();
         }
-        mapConfig.putPOJO("options", mapConfiguration);
+        mapConfig.putPOJO("options", mapConfiguration.options);
+        mapConfig.putPOJO("sources", mapConfiguration.sources);
         configurationService.saveMapConfig(mapConfig);
         mapSettings.clear();
         return mapConfig;
@@ -151,43 +148,10 @@ public class MapService implements ContainerService {
         String tileServerHost = getString(container.getConfig(), OR_MAP_TILESERVER_HOST, OR_MAP_TILESERVER_HOST_DEFAULT);
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
 
-        WebService webService = container.getService(WebService.class);
-
-        webService.getRequestHandlers().add(0, pathStartsWithHandler("External Map Tile Proxy", externalTileServerPath, exchange -> {
-            final ObjectNode settings = (metadata.isValid() && !mapConfig.isEmpty()) 
-                ? mapConfig.deepCopy()
-                : mapConfig.objectNode();
-
-            // URL url = new URL(settings.get("sources").get("vector_tiles").get("url").textValue());
-            URL url = new URL(settings.get("options").get("default").get("mapUrl").textValue());
-            // TODO: handle this determination differently
-            if (!url.getProtocol().startsWith("http")) {
-                return;
-            }
-
-            UriBuilder tileServerUri = UriBuilder.fromPath(url.getPath())
-                    .scheme("http")
-                    .host(url.getHost())
-                    .port(url.getPort());
-
-            @SuppressWarnings("deprecation")
-            ProxyHandler proxyHandler = new ProxyHandler(
-                    new io.undertow.server.handlers.proxy.SimpleProxyClientProvider(tileServerUri.build()),
-                    0, // TODO: MAKE CONFIGURABLE
-                    ResponseCodeHandler.HANDLE_404
-            ).setReuseXForwarded(true);
-    
-            // TODO: ADD CHECK TO AVOID CALLING THE API ITSELF
-
-            // Change request path to match what the tile server expects
-            String path = exchange.getRequestPath().substring(externalTileServerPath.length());
-            exchange.setRequestURI(path, true);
-            exchange.setRequestPath(path);
-            exchange.setRelativePath(path);
-            proxyHandler.handleRequest(exchange);
-        }));
-
         if (!TextUtil.isNullOrEmpty(tileServerHost)) {
+
+            WebService webService = container.getService(WebService.class);
+
             UriBuilder tileServerUri = UriBuilder.fromPath("/")
                     .scheme("http")
                     .host(tileServerHost)
@@ -308,6 +272,7 @@ public class MapService implements ContainerService {
                 .filter(JsonNode::isObject)
                 .ifPresent(vectorTilesNode -> {
                     ObjectNode vectorTilesObj = (ObjectNode)vectorTilesNode;
+                    vectorTilesObj.remove("url");
 
                     vectorTilesObj.put("attribution", metadata.attribution);
                     vectorTilesObj.put("maxzoom", metadata.maxZoom);
@@ -321,23 +286,25 @@ public class MapService implements ContainerService {
                                 vectorTilesObj.replace("center", centerArray);
                             }));
 
-                    JsonNode defaultRealm = settings.get("options").get("default");
-                    if (defaultRealm.hasNonNull("mapUrl") && defaultRealm.get("mapUrl").textValue().startsWith("http")) {
-                        vectorTilesObj.remove("url");
+                    final JsonNode external = settings.get("sources").get("external");
+                    boolean hasExtUrl = external != null && external.hasNonNull("url");
+                    @SuppressWarnings("null")
+                    boolean hasSecret = hasExtUrl ? external.get("url").textValue().contains("{secret}") : false;
 
-                        // TODO: maybe add proxy option to configure whether the requets needs to be proxied to the manager api first
-                        ArrayNode tilesArray = mapConfig.arrayNode();
-                        String tileUrl = UriBuilder.fromUri(host).replacePath(externalTileServerPath).build().toString() + "/{z}/{x}/{y}";
-                        tilesArray.insert(0, tileUrl);
-                        vectorTilesObj.replace("tiles", tilesArray);
-                    } else {
-                        vectorTilesObj.remove("url");
-    
-                        ArrayNode tilesArray = mapConfig.arrayNode();
-                        String tileUrl = UriBuilder.fromUri(host).replacePath(API_PATH).path(realm).path("map/tile").build().toString() + "/{z}/{x}/{y}";
-                        tilesArray.insert(0, tileUrl);
-                        vectorTilesObj.replace("tiles", tilesArray);
-                    }
+                    @SuppressWarnings("null")
+                    String tileUrl = hasExtUrl && !hasSecret 
+                        ? external.get("url").textValue() 
+                        : UriBuilder.fromUri(host)
+                            .replacePath(API_PATH)
+                            .path(realm)
+                            .path(hasSecret ? "map/external/tile" : "map/tile")
+                            .build()
+                            .toString() + "/{z}/{x}/{y}";
+                    
+                    ArrayNode tilesArray = mapConfig.arrayNode();
+
+                    tilesArray.insert(0, tileUrl);
+                    vectorTilesObj.replace("tiles", tilesArray);
                 });
 
         // Set sprite URL to shared folder
@@ -419,6 +386,36 @@ public class MapService implements ContainerService {
         } finally {
             closeQuietly(query, result);
         }
+    }
+
+    public URI getExternalMapTileUri(int zoom, int column, int row) {
+        final ObjectNode settings = (metadata.isValid() && !mapConfig.isEmpty()) 
+                ? mapConfig.deepCopy()
+                : mapConfig.objectNode();
+
+        final String source = settings
+            .get("sources")
+            .get("external")
+            .get("url")
+            .textValue();
+
+        if (!source.contains("{secret}")) {
+            return null;
+        }
+
+        final String secret = settings
+            .get("sources")
+            .get("external")
+            .get("secret")
+            .textValue();
+
+        final UriBuilder baseUri = UriBuilder.fromUri(source)
+            .resolveTemplate("z", zoom)
+            .resolveTemplate("x", column)
+            .resolveTemplate("y", row)
+            .resolveTemplate("secret", secret);
+
+        return baseUri.build();
     }
 
     protected static final class Metadata {

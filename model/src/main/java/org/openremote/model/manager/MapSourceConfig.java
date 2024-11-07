@@ -19,15 +19,8 @@
  */
 package org.openremote.model.manager;
 
-import org.openremote.model.map.GeoJsonConfig;
-
-public class MapRealmConfig {
-    protected float[] center;
-    protected float[] bounds;
-    protected int zoom;
-    protected int minZoom;
-    protected int maxZoom;
-    protected boolean boxZoom;
-    protected String geocodeUrl;
-    protected GeoJsonConfig geoJson;
+public class MapSourceConfig {
+	protected String type;
+	protected String url;
+	protected String secret;
 }
