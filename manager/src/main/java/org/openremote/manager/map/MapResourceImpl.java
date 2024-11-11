@@ -20,31 +20,28 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import io.undertow.server.handlers.ResponseCodeHandler;
-
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
 import org.openremote.container.web.WebResource;
-import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
-import org.openremote.model.manager.MapConfig;
-import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.map.MapResource;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.WebApplicationException;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.Response;
 
 import java.io.IOException;
 import java.io.InputStream;
+import org.openremote.model.manager.MapConfig;
+
+import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Enumeration;
-import java.util.Map;
 import java.util.zip.GZIPInputStream;
+
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
@@ -90,7 +87,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     @Override
     public void getExternalTile(@Context HttpServletRequest request, @Context HttpServletResponse response, int zoom, int column, int row) {
         URI uri = mapService.getExternalMapTileUri(zoom, column, row);
-        
+
         try {
             HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
             connection.setRequestMethod("GET");
@@ -126,6 +123,17 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
         } catch (IOException error) {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public Response uploadMap(@Context HttpServletRequest request) throws IOException {
+
+        boolean isSaved = mapService.saveUploadedFile(request.getInputStream(), "mapdata-custom.mbtiles");
+        if (isSaved) {
+            return Response.ok("File uploaded successfully").build();
+        } else {
+            return Response.serverError().entity("File upload failed").build();
         }
     }
 }

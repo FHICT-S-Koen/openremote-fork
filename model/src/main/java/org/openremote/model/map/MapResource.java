@@ -23,17 +23,16 @@ package org.openremote.model.map;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.Response;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
-import org.openremote.model.manager.MapRealmConfig;
 
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
-import java.util.Map;
 
 @Tag(name = "Map", description = "Operations on maps")
 @Path("map")
@@ -84,4 +83,10 @@ public interface MapResource {
     @Path("external/tile/{zoom}/{column}/{row}")
     @Operation(operationId = "getExternalTile", summary = "Retrieve the vector tile data for Mapbox GL")
     void getExternalTile(@Context HttpServletRequest request, @Context HttpServletResponse response, @PathParam("zoom")int zoom, @PathParam("column")int column, @PathParam("row")int row);
+
+
+    @POST
+    @Path("/uploadMap")
+    @Consumes(MediaType.APPLICATION_OCTET_STREAM)
+    Response uploadMap(@Context HttpServletRequest request) throws IOException;
 }

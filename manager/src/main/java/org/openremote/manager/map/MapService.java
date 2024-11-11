@@ -22,36 +22,28 @@ package org.openremote.manager.map;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.github.javaparser.utils.Log;
 import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
-import jakarta.ws.rs.core.UriInfo;
-
-import org.apache.commons.text.StringSubstitutor;
-import org.jboss.resteasy.client.jaxrs.ResteasyClient;
-import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.openremote.container.web.WebService;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.manager.web.ManagerWebService;
 import org.openremote.model.Container;
 import org.openremote.model.ContainerService;
 import org.openremote.model.manager.MapConfig;
-import org.openremote.model.manager.MapRealmConfig;
 import org.openremote.model.util.TextUtil;
 import org.openremote.model.util.ValueUtil;
 
-import jakarta.ws.rs.client.WebTarget;
 import jakarta.ws.rs.core.UriBuilder;
 import java.io.*;
 import java.net.URI;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.*;
+import java.util.*;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -66,6 +58,7 @@ import static org.openremote.manager.web.ManagerWebService.API_PATH;
 
 public class MapService implements ContainerService {
 
+    public static final String OR_MAP_TILES_CUSTOM_PATH = "manager/src/map/mapdata-custom.mbtiles";
     public static final String MAP_SHARED_DATA_BASE_URI = "/shared";
     public static final String OR_MAP_TILES_PATH = "OR_MAP_TILES_PATH";
     public static final String OR_MAP_TILES_PATH_DEFAULT = "manager/src/map/mapdata.mbtiles";
@@ -88,6 +81,7 @@ public class MapService implements ContainerService {
     protected ObjectNode mapConfig;
     protected ConcurrentMap<String, ObjectNode> mapSettings = new ConcurrentHashMap<>();
     protected ConcurrentMap<String, ObjectNode> mapSettingsJs = new ConcurrentHashMap<>();
+    private static final String UPLOAD_PATH_DEFAULT = "manager/src/map/";
 
     public ObjectNode saveMapConfig(MapConfig mapConfiguration) {
         LOG.log(Level.INFO, "Saving mapsettings.json..");
@@ -208,6 +202,22 @@ public class MapService implements ContainerService {
                 mapTilesPath = Paths.get("manager/src/map/mapdata.mbtiles");
             }
         }
+
+
+        File parentDir = mapTilesPath.getParent().toFile();
+
+        if (parentDir.isDirectory()) {
+            String fileExtension = ".mbtiles";
+
+            File[] matchingFiles = parentDir.listFiles((dir, name) -> !Objects.equals(name, "mapdata.mbtiles") && name.endsWith(fileExtension));
+
+            if (matchingFiles != null && matchingFiles.length != 0) {
+                mapTilesPath = matchingFiles[0].toPath().toAbsolutePath();
+            }
+
+        }
+        Log.info(mapTilesPath.toString());
+
 
         if (mapSettingsPath == null) {
             if (Files.isRegularFile(Paths.get("/opt/map/mapsettings.json"))) {
@@ -460,6 +470,23 @@ public class MapService implements ContainerService {
             throw new RuntimeException(ex);
         } finally {
             closeQuietly(query, result);
+        }
+    }
+
+    public boolean saveUploadedFile(InputStream fileInputStream, String filename) {
+        Path destinationPath = Paths.get("manager/src/map/", filename); // Specify target directory for uploaded file
+
+        try (OutputStream outputStream = Files.newOutputStream(destinationPath)) {
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+                outputStream.write(buffer, 0, bytesRead);
+            }
+            LOG.info("File uploaded successfully to: " + destinationPath.toAbsolutePath());
+            return true;
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to save uploaded file", e);
+            return false;
         }
     }
 
