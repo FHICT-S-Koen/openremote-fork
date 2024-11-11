@@ -20,6 +20,11 @@
 package org.openremote.manager.map;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.Part;
+import jakarta.ws.rs.FormParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.UriInfo;
 import org.openremote.container.web.WebResource;
 import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
@@ -28,8 +33,11 @@ import org.openremote.model.map.MapResource;
 
 import jakarta.ws.rs.WebApplicationException;
 import jakarta.ws.rs.core.Response;
+
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Map;
+
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
@@ -69,6 +77,17 @@ public class MapResourceImpl extends WebResource implements MapResource {
             return tile;
         } else {
             throw new WebApplicationException(Response.Status.NOT_FOUND);
+        }
+    }
+
+    @Override
+    public Response uploadMap(@Context HttpServletRequest request) throws IOException {
+
+        boolean isSaved = mapService.saveUploadedFile(request.getInputStream(), "mapdata-custom.mbtiles");
+        if (isSaved) {
+            return Response.ok("File uploaded successfully").build();
+        } else {
+            return Response.serverError().entity("File upload failed").build();
         }
     }
 }
