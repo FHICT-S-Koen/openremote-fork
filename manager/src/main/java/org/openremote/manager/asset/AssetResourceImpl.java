@@ -57,6 +57,13 @@ import static org.openremote.manager.asset.AssetProcessingService.ATTRIBUTE_EVEN
 import static org.openremote.model.query.AssetQuery.Access;
 import static org.openremote.model.value.MetaItemType.*;
 
+
+// *** 
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.annotation.Async;
+
 public class AssetResourceImpl extends ManagerWebResource implements AssetResource {
 
     private static final Logger LOG = Logger.getLogger(AssetResourceImpl.class.getName());
@@ -74,6 +81,7 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         this.messageBrokerService = messageBrokerService;
         this.clientEventService = clientEventService;
     }
+/*
 
     @Override
     public Asset<?>[] getCurrentUserAssets(RequestParams requestParams) {
@@ -101,6 +109,28 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         } catch (IllegalStateException ex) {
             throw new WebApplicationException(ex, BAD_REQUEST);
         }
+    } */
+
+    @Override
+    @Cacheable("currentUserAssets")
+    public Asset<?>[] getCurrentUserAssets(RequestParams requestParams) {
+        if (isSuperUser()) {
+            return new Asset<?>[0];
+        }
+
+        if (!isAuthenticated()) {
+            throw new NotAuthorizedException("Must be authenticated");
+        }
+
+        AssetQuery query = new AssetQuery().userIds(getUserId());
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        List<Asset<?>> assets = assetStorageService.findAll(query);
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+        return assets.toArray(new Asset[0]);
     }
 
     @Override
@@ -528,6 +558,39 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         }
     }
 
+    //addition01
+
+    @Override
+    public List<Asset<?>> getAssetsByType(String type) {
+        if (type == null || type.isEmpty()) {
+            throw new BadRequestException("Asset type must be specified");
+        }
+
+        AssetQuery query = new AssetQuery().type(type);
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        return assetStorageService.findAll(query);
+    }
+
+    //addition02
+    @Async
+    public void updateAssetParentAsync(String parentId, List<String> assetIds) {
+        AssetQuery query = new AssetQuery();
+        query.ids = assetIds.toArray(String[]::new);
+
+        List<Asset<?>> assets = this.assetStorageService.findAll(query);
+
+        assets.forEach(asset -> {
+            asset.setParentId(parentId);
+            assetStorageService.merge(asset);
+        });
+    }
+
+
+/*
     @Override
     public Asset<?>[] queryAssets(RequestParams requestParams, AssetQuery query) {
         if (query == null) {
@@ -544,6 +607,25 @@ public class AssetResourceImpl extends ManagerWebResource implements AssetResour
         request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
 
         return result.toArray(new Asset[0]);
+    }*/
+
+   @Override
+    public Asset<?>[] queryAssets(RequestParams requestParams, AssetQuery query) {
+        if (query == null) {
+            query = new AssetQuery();
+        }
+
+        if (!assetStorageService.authorizeAssetQuery(query, getAuthContext(), getRequestRealmName())) {
+            throw new ForbiddenException("User not authorized to execute specified query");
+        }
+
+        // Implement pagination to handle large datasets
+        int page = requestParams.getPageOrDefault(0); // Extract page from request
+        int size = requestParams.getSizeOrDefault(50); // Extract size from request
+
+        Page<Asset<?>> resultPage = assetStorageService.findAll(query, PageRequest.of(page, size));
+        request.setAttribute(HttpHeaders.CONTENT_ENCODING, "gzip");
+        return resultPage.getContent().toArray(new Asset[0]);
     }
 
     protected AttributeWriteResult doAttributeWrite(AttributeEvent event) {

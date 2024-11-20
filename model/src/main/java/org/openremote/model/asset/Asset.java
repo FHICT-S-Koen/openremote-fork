@@ -277,11 +277,20 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     public static final AttributeDescriptor<String> MANUFACTURER = new AttributeDescriptor<>("manufacturer", ValueType.TEXT).withOptional(true);
     public static final AttributeDescriptor<String> MODEL = new AttributeDescriptor<>("model", ValueType.TEXT).withOptional(true);
 
+/*
     @Id
     @Column(name = "ID", length = 22, columnDefinition = "char(22)")
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
     @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
     protected String id;
+*/
+
+    @Id
+    @Column(name = "ID", length = 22, columnDefinition = "char(22)", unique = true, nullable = false)
+    @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.id.Pattern}")
+    @GeneratedValue(generator = PERSISTENCE_UNIQUE_ID_GENERATOR)
+    protected String id;
+
 
     @Version
     @Min(value = 0L, message = "{Asset.version.Min}")
@@ -301,7 +310,13 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "ACCESS_PUBLIC_READ", nullable = false)
     protected boolean accessPublicRead;
 
+/*
     @Column(name = "PARENT_ID", length = 22, columnDefinition = "char(22)")
+    @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.parentId.Pattern}")
+    protected String parentId;
+*/
+
+    @Column(name = "PARENT_ID", length = 22, columnDefinition = "char(22)", index = true) // Add index
     @Pattern(regexp = Constants.ASSET_ID_REGEXP, message = "{Asset.parentId.Pattern}")
     protected String parentId;
 
@@ -310,8 +325,13 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
     @Column(name = "REALM", nullable = false, updatable = false)
     protected String realm;
 
+/*
     @Column(name = "TYPE", nullable = false, updatable = false, insertable = false)
     protected String type = getClass().getSimpleName();
+*/
+
+    @Column(name = "TYPE", nullable = false, updatable = false, insertable = false, index = true) // Add index
+    protected String type;
 
     @Column(name = "PATH", updatable = false, insertable = false, columnDefinition = LTreeType.TYPE)
     @Type(LTreeType.class)
@@ -435,12 +455,25 @@ public abstract class Asset<T extends Asset<?>> implements IdentifiableEntity<T>
         return path != null && Arrays.asList(getPath()).contains(assetId);
     }
 
+/*
     public AttributeMap getAttributes() {
         if (attributes == null) {
             attributes = new AttributeMap();
         }
         return attributes;
     }
+*/
+
+    private transient AttributeMap cachedAttributes;
+
+    public AttributeMap getAttributes() {
+        if (cachedAttributes == null) {
+            cachedAttributes = attributes != null ? attributes : new AttributeMap();
+        }
+        return cachedAttributes;
+    }
+
+
 
     public T setAttributes(AttributeMap attributes) {
         this.attributes = attributes;

@@ -63,6 +63,10 @@ import java.util.stream.Stream;
 
 import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 
+//modifications
+import org.springframework.cache.annotation.Cacheable; //** */
+import org.springframework.scheduling.annotation.Async; //** */
+
 // TODO: Implement model client event support
 /**
  * A service for abstracting {@link org.openremote.model.util.ValueUtil} and handling local model requests vs
@@ -242,30 +246,45 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         container.getService(MessageBrokerService.class).getContext().addRoutes(this);
     }
 
-    protected void initDynamicModel() {
-        try {
-            Path rootStorageDir = persistenceService.getStorageDir();
-            storageDir = rootStorageDir.resolve(DIRECTORY_NAME);
 
-            if (!Files.exists(storageDir)) {
-                try {
-                    Files.createDirectories(storageDir);
-                } catch (IOException e) {
-                    LOG.log(Level.SEVERE, "Failed to create asset model storage directory", e);
-                    throw new RuntimeException(e);
-                }
-            } else if (!Files.isDirectory(storageDir)) {
-                throw new IllegalStateException("Asset model storage directory is not a directory: " + storageDir);
-            }
+//modifications
 
-            dynamicAssetTypeInfos = loadDescriptors(AssetTypeInfo.class, storageDir)
-                .collect(Collectors.toMap(ati -> ati.getAssetDescriptor().getName(), ati -> ati));
+protected void initDynamicModel() {
+    try {
+        Path rootStorageDir = persistenceService.getStorageDir();
+        storageDir = rootStorageDir.resolve(DIRECTORY_NAME);
 
-            LOG.fine("Loaded asset type infos from '" + storageDir + "': count = " + dynamicAssetTypeInfos.size());
-        } catch (Exception e) {
-            LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "':" + e.getMessage());
+        if (!Files.exists(storageDir)) {
+            Files.createDirectories(storageDir);
+        } else if (!Files.isDirectory(storageDir)) {
+            throw new IllegalStateException("Asset model storage directory is not a directory: " + storageDir);
         }
+
+        dynamicAssetTypeInfos = Files.list(storageDir)
+            .parallel() // Use parallel streams for better performance
+            .map(this::parseDescriptor)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toMap(
+                ati -> ati.getAssetDescriptor().getName(),
+                Function.identity()
+            ));
+
+        LOG.fine("Loaded asset type infos from '" + storageDir + "': count = " + dynamicAssetTypeInfos.size());
+    } catch (IOException e) {
+        LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "': " + e.getMessage());
     }
+}
+
+private AssetTypeInfo parseDescriptor(Path descriptorFile) {
+    try {
+        String descriptorStr = Files.readString(descriptorFile);
+        return descriptorStr != null ? parse(descriptorStr, AssetTypeInfo.class) : null;
+    } catch (IOException | JsonProcessingException e) {
+        LOG.log(Level.SEVERE, "Failed to parse descriptor file '" + descriptorFile + "': " + e.getMessage());
+        return null;
+    }
+}
+
 
     @Override
     public void start(Container container) throws Exception {
@@ -283,6 +302,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         return false;
     }
 
+/*
     @Override
     public AssetDescriptor<?>[] getAssetDescriptors() {
         if (dynamicAssetTypeInfos == null) {
@@ -290,6 +310,28 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
         return dynamicAssetTypeInfos.values().stream().map(AssetTypeInfo::getAssetDescriptor).toArray(AssetDescriptor[]::new);
     }
+*/   
+//*** */ */
+    @Override
+    @Cacheable("assetDescriptors")
+    public AssetDescriptor<?>[] getAssetDescriptors() {
+        if (dynamicAssetTypeInfos == null) {
+            initDynamicModel();
+        }
+        return dynamicAssetTypeInfos.values()
+            .parallelStream() // U parallel streams for large datasets
+            .map(AssetTypeInfo::getAssetDescriptor)
+            .toArray(AssetDescriptor[]::new);
+    }
+
+
+    @Async
+    public CompletableFuture<Void> initDynamicModelAsync() {
+        initDynamicModel();
+        return CompletableFuture.completedFuture(null);
+    }
+
+    //*** */
 
     @Override
     public Map<String, Collection<AttributeDescriptor<?>>> getAttributeDescriptors() {

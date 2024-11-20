@@ -29,7 +29,10 @@ import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
+import org.springframework.cache.annotation.Cacheable;
+
 import java.util.Map;
+import java.util.logging.Logger;
 
 public class AssetModelResourceImpl extends ManagerWebResource implements AssetModelResource {
 
@@ -64,4 +67,26 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
     }
+
+    //additions
+
+    @Override
+    @Cacheable("assetDescriptors")
+    public AssetDescriptor<?>[] getAssetDescriptors(RequestParams requestParams, String parentId, String parentType) {
+        return assetModelService.getAssetDescriptors(parentId, parentType);
+    }
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AssetResourceImpl.class);
+
+    @Override
+    public Asset<?>[] getCurrentUserAssets(RequestParams requestParams) {
+        LOGGER.info("Fetching current user assets for user: {}", getUserId());
+        try {
+            // Original logic
+        } catch (Exception e) {
+            LOGGER.error("Error fetching user assets", e);
+            throw e;
+        }
+    }
+
 }
