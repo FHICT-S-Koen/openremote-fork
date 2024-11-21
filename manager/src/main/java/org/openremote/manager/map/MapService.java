@@ -235,7 +235,7 @@ public class MapService implements ContainerService {
         int tileServerPort = getInteger(container.getConfig(), OR_MAP_TILESERVER_PORT, OR_MAP_TILESERVER_PORT_DEFAULT);
 
         if (!TextUtil.isNullOrEmpty(tileServerHost)) {
-            
+
             WebService webService = container.getService(WebService.class);
 
             UriBuilder tileServerUri = UriBuilder.fromPath("/")
@@ -491,7 +491,7 @@ public class MapService implements ContainerService {
     }
 
     public URI getExternalMapTileUri(int zoom, int column, int row) {
-        final ObjectNode settings = (metadata.isValid() && !mapConfig.isEmpty()) 
+        final ObjectNode settings = (metadata.isValid() && !mapConfig.isEmpty())
                 ? mapConfig.deepCopy()
                 : mapConfig.objectNode();
 

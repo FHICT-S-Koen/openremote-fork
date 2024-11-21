@@ -43,6 +43,7 @@ import java.util.Enumeration;
 import java.util.zip.GZIPInputStream;
 
 
+
 public class MapResourceImpl extends WebResource implements MapResource {
 
     protected final MapService mapService;

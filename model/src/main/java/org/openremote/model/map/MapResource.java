@@ -19,7 +19,6 @@
  */
 package org.openremote.model.map;
 
-// import io.undertow.server.HttpServerExchange;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -33,6 +32,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import java.io.IOException;
+
 
 @Tag(name = "Map", description = "Operations on maps")
 @Path("map")
