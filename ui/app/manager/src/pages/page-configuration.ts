@@ -330,7 +330,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                     } else {
                                                         delete this.mapConfig.sources['external'];
                                                     }
-                                                    this.requestUpdate("map");
+                                                    this.requestUpdate("mapConfig");
                                                     this.mapConfigChanged = true;
                                                 }}"
                                         ></or-mwc-input>
@@ -348,7 +348,7 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                                     } else {
                                                         delete this.mapConfig.sources['external'].secret;
                                                     }
-                                                    this.requestUpdate("map");
+                                                    this.requestUpdate("mapConfig");
                                                     this.mapConfigChanged = true;
                                                 }}"
                                         ></or-mwc-input>
