@@ -207,6 +207,9 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     @state()
     protected mapConfigChanged = false;
 
+    @state()
+    protected isMapCustom: boolean = false;
+
     @query("#managerConfig-panel")
     protected realmConfigPanel?: OrConfPanel;
 
@@ -216,6 +219,18 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ------------------------------------------ */
 
     public stateChanged(state: AppStateKeyed) {
+    }
+
+    public firstUpdated() {
+      const response = fetch('http://0.0.0.0:8080/api/master/map/isMapCustom', {
+        headers: {
+          "Accept": "application/json"
+        }
+      }).then(response => response.json()).then(json => {
+        this.isMapCustom = json["map-custom"]
+        console.log(json)
+      })
+
     }
 
     // On every update..
@@ -352,8 +367,11 @@ export class PageConfiguration extends Page<AppStateKeyed> {
                                         <div class="subheader">${i18next.t("configuration.configureMapTiles")}</div>
                                         <span>${i18next.t("configuration.configureMapTilesDescription")}</span>
                                         <div class="input"> 
-                                            <or-file-uploader disabled label="Upload map tiles" />
+                                            <or-file-uploader label="Upload map tiles" @change="${(e) => {this.uploadCustomMap(e)}}"/>
                                         </div>
+                                      ${when(this.isMapCustom, () => html`
+                                        <button @click="${() => { this.deleteCustomMap()}}">Remove uploaded map</button>
+                                      `)}
                                     </div>
                                 </div>
                                 <hr style="border: none; border-top: 1px solid #bbb; margin: 0; margin-bottom: 10px">
@@ -382,6 +400,36 @@ export class PageConfiguration extends Page<AppStateKeyed> {
     /* ---------------- */
 
     // FETCH METHODS
+
+  protected async uploadCustomMap(event: CustomEvent) {
+    const file = event.detail.value[0]
+
+    const response = await fetch('http://0.0.0.0:8080/api/master/map/uploadMap', {
+      method: 'post',
+      body: file,
+      headers: {
+        "Accept": "application/json"
+      }
+    })
+
+    if (!response.ok) {
+      console.error("Map upload failed")
+      return
+    }
+
+    window.location.reload();
+  }
+
+  protected async deleteCustomMap() {
+    const response = await fetch('http://0.0.0.0:8080/api/master/map/deleteMap', { method: 'delete'})
+
+    if (!response.ok) {
+      console.error("Map delete failed")
+      return
+    }
+
+    window.location.reload();
+  }
 
     protected async getManagerConfig(): Promise<ManagerAppConfig | undefined> {
         const response = await fetch(this.urlPrefix + "/manager_config.json", { cache: "reload" });
