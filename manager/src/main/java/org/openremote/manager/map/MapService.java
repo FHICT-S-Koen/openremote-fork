@@ -473,8 +473,8 @@ public class MapService implements ContainerService {
         }
     }
 
-    public boolean saveUploadedFile(InputStream fileInputStream, String filename) {
-        Path destinationPath = Paths.get("manager/src/map/", filename); // Specify target directory for uploaded file
+    public boolean saveUploadedFile(InputStream fileInputStream) {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles"); // Specify target directory for uploaded file
 
         try (OutputStream outputStream = Files.newOutputStream(destinationPath)) {
             byte[] buffer = new byte[4096];
@@ -482,11 +482,35 @@ public class MapService implements ContainerService {
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 outputStream.write(buffer, 0, bytesRead);
             }
+            this.mapTilesPath = destinationPath.toAbsolutePath();
             LOG.info("File uploaded successfully to: " + destinationPath.toAbsolutePath());
+            this.setData();
             return true;
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to save uploaded file", e);
             return false;
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public boolean isCustomUploadedFile() {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+
+        return Files.exists(destinationPath);
+    }
+
+    public void deleteUploadedFile() throws RuntimeException {
+        Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
+
+        if (destinationPath.toFile().delete()) {
+            LOG.info("File deleted successfully");
+
+        } else {
+            LOG.severe("Failed to delete file");
+            throw new RuntimeException("Failed to delete file");
         }
     }
 

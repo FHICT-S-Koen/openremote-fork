@@ -19,6 +19,7 @@
  */
 package org.openremote.manager.map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.core.Context;
@@ -130,11 +131,40 @@ public class MapResourceImpl extends WebResource implements MapResource {
     @Override
     public Response uploadMap(@Context HttpServletRequest request) throws IOException {
 
-        boolean isSaved = mapService.saveUploadedFile(request.getInputStream(), "mapdata-custom.mbtiles");
+        boolean isSaved = mapService.saveUploadedFile(request.getInputStream());
         if (isSaved) {
-            return Response.ok("File uploaded successfully").build();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode response = mapper.createObjectNode();
+            response.put("map-custom", true);
+            return Response.status(Response.Status.CREATED).entity(response).build();
         } else {
-            return Response.serverError().entity("File upload failed").build();
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode response = mapper.createObjectNode();
+            response.put("map-custom", false);
+            return Response.status(Response.Status.BAD_REQUEST).entity(response).build();
+        }
+    }
+
+    @Override
+    public Response isMapCustom() {
+        ObjectMapper mapper = new ObjectMapper();
+        ObjectNode response = mapper.createObjectNode();
+
+        response.put("map-custom", mapService.isCustomUploadedFile());
+
+        return Response.status(Response.Status.OK) // You can replace OK with another status
+                .entity(response)
+                .build();
+    }
+
+    @Override
+    public Response deleteMap(@Context HttpServletRequest request) {
+        try {
+            mapService.deleteUploadedFile();
+            return Response.status(201).build();
+        } catch (Exception error) {
+
+            return Response.status(400).build();
         }
     }
 }

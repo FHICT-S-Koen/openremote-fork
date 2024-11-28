@@ -89,4 +89,12 @@ public interface MapResource {
     @Path("/uploadMap")
     @Consumes(MediaType.APPLICATION_OCTET_STREAM)
     Response uploadMap(@Context HttpServletRequest request) throws IOException;
+
+    @GET
+    @Path("/isMapCustom")
+    Response isMapCustom();
+
+    @DELETE
+    @Path("/deleteMap")
+    Response deleteMap(@Context HttpServletRequest request);
 }
