@@ -38,7 +38,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Enumeration;
-import java.util.zip.GZIPInputStream;
 
 public class MapResourceImpl extends WebResource implements MapResource {
 
@@ -106,15 +105,12 @@ public class MapResourceImpl extends WebResource implements MapResource {
             response.setContentType(contentType);
 
             String encoding = connection.getContentEncoding();
-            InputStream inputStream;
-            // TODO: GZIP not applied correctly
-            if ("gzip".equalsIgnoreCase(encoding)) {
-                inputStream = new GZIPInputStream(connection.getInputStream());
-            } else {
-                inputStream = connection.getInputStream();
-            }
+            InputStream inputStream = connection.getInputStream();
 
             try (OutputStream outputStream = response.getOutputStream()) {
+                if ("gzip".equalsIgnoreCase(encoding)) {
+                    response.setHeader("Content-Encoding", "gzip");
+                }
                 byte[] buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) != -1) {
