@@ -91,8 +91,6 @@ public class MapService implements ContainerService {
         try(OutputStream out = new FileOutputStream(new File(mapSettingsPath.toUri()))){
             mapSettingsJson.putPOJO("options", mapConfiguration.options);
             mapSettingsJson.putPOJO("sources", mapConfiguration.sources);
-            // TODO: validate url is not the same as ext
-            // TODO: validate url contains /{z}/{x}/{y}
             out.write(ValueUtil.JSON.writeValueAsString(mapSettingsJson).getBytes());
             this.setData();
         } catch (ClassNotFoundException | IOException | NullPointerException | SQLException exception) {

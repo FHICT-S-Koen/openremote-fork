@@ -25,6 +25,7 @@ import org.openremote.manager.security.ManagerIdentityService;
 import org.openremote.model.http.RequestParams;
 import org.openremote.model.manager.MapConfig;
 import org.openremote.model.map.MapResource;
+import org.openremote.model.util.ValueUtil;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -51,6 +52,31 @@ public class MapResourceImpl extends WebResource implements MapResource {
 
     @Override
     public Object saveSettings(RequestParams requestParams, MapConfig mapConfig) {
+        ObjectNode mapSourcesJson = ValueUtil.JSON.valueToTree(mapConfig.sources);
+        if (mapSourcesJson.has("external")) {
+            try {
+                final String url = mapSourcesJson
+                    .get("external")
+                    .get("url")
+                    .textValue();
+
+                if (!url.contains("/{z}/{x}/{y}")) {
+                    throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                }
+                for (String realm : mapConfig.options.keySet()) {
+                    if (realm == "default") {
+                        realm = "master";
+                    }
+                    String externalEndpoint = this.uriInfo.getBaseUri() + realm + "/map/external/tile";
+                    if (url.contains(externalEndpoint)) {
+                        throw new WebApplicationException(Response.Status.BAD_REQUEST);
+                    }
+                }
+            } catch (NullPointerException exception) {
+                throw new WebApplicationException(Response.Status.BAD_REQUEST);
+            };
+        }
+
         return mapService.saveMapConfig(mapConfig);
     }
 
@@ -84,7 +110,7 @@ public class MapResourceImpl extends WebResource implements MapResource {
     public void getExternalTile(@Context HttpServletRequest request, @Context HttpServletResponse response, int zoom, int column, int row) {
         URI uri = mapService.getExternalMapTileUri(zoom, column, row);
 
-        if (uri.equals(null)) {
+        if (uri == null) {
             throw new WebApplicationException(Response.Status.PROXY_AUTHENTICATION_REQUIRED);
         }
         
