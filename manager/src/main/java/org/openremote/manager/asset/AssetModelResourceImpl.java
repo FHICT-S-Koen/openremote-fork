@@ -28,6 +28,8 @@ import org.openremote.model.http.RequestParams;
 import org.openremote.model.asset.AssetTypeInfo;
 import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
+import org.springframework.cache.annotation.CacheEvict;
+
 
 import org.springframework.cache.annotation.Cacheable;
 
@@ -88,5 +90,11 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
             throw e;
         }
     }
+    // Clear cache when updating asset type info
+    @CacheEvict(value = {"customAssetTypes", "assetDescriptors", "assetInfos"}, allEntries = true)
+    public void updateAssetType(String id, AssetTypeInfo updatedInfo) {
+         // Logic to update asset type
+    }
+
 
 }

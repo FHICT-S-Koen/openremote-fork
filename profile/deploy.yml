@@ -149,6 +149,8 @@ services:
       # Bearer tokens are only valid for minutes, and authentication fails if Keycloak drifts
       TZ: ${TZ:-Europe/Amsterdam}
 
+      JAVA_OPTS: -Djava.util.logging.config.file:-/manager/src/main/resources/logging-cache.properties
+
       # The password for the super user (admin) of the master realm (must match keycloak password if using
       # the keycloak identity provider).
       OR_ADMIN_PASSWORD: ${OR_ADMIN_PASSWORD:-secret}

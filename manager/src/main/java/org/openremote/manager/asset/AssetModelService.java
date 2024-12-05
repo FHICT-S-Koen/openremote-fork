@@ -66,6 +66,10 @@ import static org.openremote.model.syslog.SyslogCategory.MODEL_AND_VALUES;
 //modifications
 import org.springframework.cache.annotation.Cacheable; //** */
 import org.springframework.scheduling.annotation.Async; //** */
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.cache.annotation.Cacheable;
 
 // TODO: Implement model client event support
 /**
@@ -214,6 +218,9 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         // Need storageDir from PersistenceService
         return PersistenceService.PRIORITY + 10;
     }
+
+    private static final Logger log = LoggerFactory.getLogger(AssetModelService.class);
+
 
     @Override
     public void configure() throws Exception {
@@ -440,4 +447,20 @@ private AssetTypeInfo parseDescriptor(Path descriptorFile) {
             throw new RuntimeException(e);
         }
     }
+    @Cacheable(value = "cachedAssetDescriptors", key = "#parentId + '-' + #parentType")
+    public AssetDescriptor<?>[] getCachedAssetDescriptors(String parentId, String parentType) {
+        log.info("Cache miss for Asset Descriptors: parentId={}, parentType={}", parentId, parentType);
+        return ValueUtil.getAssetDescriptors(parentType);
+    }
+    
+    @Cacheable(value = "cachedAssetInfos", key = "#parentId + '-' + #parentType")
+    public AssetTypeInfo[] getCachedAssetInfos(String parentId, String parentType) {
+        log.info("Cache miss for Asset Infos: parentId={}, parentType={}", parentId, parentType);
+        return ValueUtil.getAssetInfos(parentId, parentType);
+    }
+    
+
+
+
+
 }
