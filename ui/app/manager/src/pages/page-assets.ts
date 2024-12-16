@@ -31,6 +31,7 @@ import "@openremote/or-json-forms";
 import {getAlarmsRoute, getAssetsRoute, getUsersRoute} from "../routes";
 import {showSnackbar} from "@openremote/or-mwc-components/or-mwc-snackbar";
 import { InputType } from "@openremote/or-mwc-components/or-mwc-input";
+import "../components/configuration/or-conf-json";
 
 export interface PageAssetsConfig {
     viewer?: ViewerConfig;
@@ -255,6 +256,12 @@ export class PageAssets extends Page<AssetsStateKeyed>  {
         }
 
         return html`
+        <or-conf-json .managerConfig="${{}}" class="hide-mobile"
+                                      @saveLocalManagerConfig="${(ev: CustomEvent) => {
+                                        //   this.managerConfiguration = ev.detail.value as ManagerAppConfig;
+                                        //   this.managerConfigurationChanged = true;
+                                      }}"
+                        ></or-conf-json>
             <or-asset-tree id="tree" .config="${this.config && this.config.tree ? this.config.tree : PAGE_ASSETS_CONFIG_DEFAULT.tree}"
                            class="${this._assetIds && this._assetIds.length === 1 ? "hideMobile" : ""}"
                            .selectedIds="${this._assetIds}"
