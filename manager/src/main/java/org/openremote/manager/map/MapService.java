@@ -502,12 +502,14 @@ public class MapService implements ContainerService {
         return Files.exists(destinationPath);
     }
 
-    public void deleteUploadedFile() throws RuntimeException {
+    public void deleteUploadedFile() throws RuntimeException, SQLException, ClassNotFoundException {
         Path destinationPath = Paths.get("manager/src/map/", "mapdata-custom.mbtiles");
 
         if (destinationPath.toFile().delete()) {
             LOG.info("File deleted successfully");
 
+            this.mapTilesPath = Paths.get("manager/src/map/mapdata.mbtiles");
+            this.setData();
         } else {
             LOG.severe("Failed to delete file");
             throw new RuntimeException("Failed to delete file");
