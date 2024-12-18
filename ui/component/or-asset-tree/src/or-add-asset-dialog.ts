@@ -82,6 +82,38 @@ export class OrAddAssetDialog extends LitElement {
     public static get styles() {
         // language=CSS
         return css`
+
+            .new-asset-button-container {
+                margin-top: 15px;
+                text-align: center;
+            }
+
+            .new-asset-button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                padding: 8px 16px;
+                background-color: #4caf50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 14px;
+                font-weight: bold;
+            }
+
+            .new-asset-button img {
+                width: 16px; 
+                height: 16px;
+                margin-right: 8px;
+            }
+
+            .new-asset-button:hover {
+                background-color: #45a049;
+            } 
+
+
+
             #name-wrapper {
                 display: flex;
                 flex-direction: column;
@@ -229,6 +261,13 @@ export class OrAddAssetDialog extends LitElement {
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
+                        <div class="new-asset-button-container col">
+                            <button 
+                                class="new-asset-button"
+                                @click="${() => this._onNewAssetClick()}">
+                                + New Asset
+                            </button>
+                        </div>
                     </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
@@ -242,6 +281,49 @@ export class OrAddAssetDialog extends LitElement {
                 </form>
             </div>
         `;
+    }
+
+
+    protected _onNewAssetClick(): void {
+        this._openDialog({
+            title: "Create New Asset",
+            content: this._renderNewAssetEditor(),
+            confirmText: "Create",
+            onConfirm: () => this._handleCreateNewAsset()
+        });
+    }
+
+    private _renderNewAssetEditor(): TemplateResult {
+        return html`
+            <div>
+                <ace-editor 
+                    mode="json" 
+                    theme="github" 
+                    @change="${(e: Event) => this._onEditorChange(e)}"
+                    style="width: 100%; height: 300px;">
+                </ace-editor>
+            </div>
+        `;
+    }
+    
+    private _onEditorChange(e: Event): void {
+        const editor = e.target as any;
+        this._newAssetConfig = editor.value;
+    }
+    
+    private _handleCreateNewAsset(): void {
+        try {
+            const newConfig = JSON.parse(this._newAssetConfig);
+            console.log("New Asset Config:", newConfig);
+            this._addAssetToTree(newConfig);
+        } catch (e) {
+            console.error("Invalid JSON format", e);
+        }
+    }
+    
+    private _addAssetToTree(newAsset: any): void {
+        console.log("New Asset Added:", newAsset);
+        
     }
 
     protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor, parentStr: string) {
