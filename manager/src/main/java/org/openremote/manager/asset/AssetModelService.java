@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -53,6 +54,7 @@ import org.openremote.model.value.ValueDescriptor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -264,6 +266,32 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
             LOG.fine("Loaded asset type infos from '" + storageDir + "': count = " + dynamicAssetTypeInfos.size());
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "':" + e.getMessage());
+        }
+    }
+
+    public void addAssetType(String json) {
+        String fileName;
+
+        try {
+            JsonNode node = new ObjectMapper().readTree(json);
+
+            if (!node.has("name")) {
+                throw new Exception("Asset type JSON does not contain the required name field");
+            }
+
+            fileName = node.get("name").asText();
+        } catch (Exception e) {
+            LOG.log(Level.SEVERE, "Failed to parse asset type json", e);
+            return;
+        }
+
+        fileName = String.format("%s.json", fileName);
+        Path fullPath = Paths.get(storageDir.toString(), fileName);
+
+        try {
+            Files.writeString(fullPath, json);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to save custom asset types" + e.getMessage());
         }
     }
 
