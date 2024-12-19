@@ -13,10 +13,20 @@ import {
 import {i18next} from "@openremote/or-translate";
 import {DefaultColor3, DefaultColor5, Util} from "@openremote/core";
 import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-components/or-mwc-input";
+import "@openremote/or-components/or-ace-editor";
+import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
+
+type CustomDescriptor = { descriptorType: 'custom'
+    name?: string;
+    value: { name: string };
+    icon?: string;
+    colour?: string;
+ };
+type Descriptors = AssetDescriptor | AgentDescriptor | CustomDescriptor
 
 export type OrAddAssetDetail = {
     name: string | undefined;
-    descriptor: AssetDescriptor | AgentDescriptor | undefined;
+    descriptor: Descriptors | undefined;
 };
 
 export class OrAddChangedEvent extends CustomEvent<OrAddAssetDetail> {
@@ -51,10 +61,13 @@ export class OrAddAssetDialog extends LitElement {
     public assetTypes!: AssetDescriptor[];
 
     @property({attribute: false})
+    public customAssetTypes: CustomDescriptor[] = [];
+
+    @property({attribute: false})
     public parent?: Asset;
 
     @property({attribute: false})
-    public selectedType?: AgentDescriptor | AssetDescriptor;
+    public selectedType?: Descriptors;
 
     @property({attribute: false})
     public selectedAttributes: AttributeDescriptor[] = [];
@@ -161,6 +174,24 @@ export class OrAddAssetDialog extends LitElement {
                 font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
             }
 
+            #add-custom-asset {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+                font-size: 14px;
+                width: 100%;
+                height: 48px;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                transition: opacity 15ms linear, background-color 15ms linear;
+                user-select: none;
+            }
+            #add-custom-asset:hover {
+                background-color: var(--mdc-ripple-color, #000);
+                cursor: pointer;
+            }
+
             .heading,
             .mdc-list-group__subheader {
                 text-transform: uppercase;
@@ -188,7 +219,7 @@ export class OrAddAssetDialog extends LitElement {
 
     protected render() {
 
-        const mapDescriptors: (descriptors: (AssetDescriptor | AgentDescriptor)[]) => ListItem[] =
+        const mapDescriptors: (descriptors: Descriptors[]) => ListItem[] =
             (descriptors) =>
                 descriptors.map((descriptor) => {
                     return {
@@ -196,7 +227,7 @@ export class OrAddAssetDialog extends LitElement {
                             "--or-icon-fill": descriptor.colour ? "#" + descriptor.colour : "unset"
                         },
                         icon: descriptor.icon,
-                        text: Util.getAssetTypeLabel(descriptor),
+                        text: Util.getAssetTypeLabel(descriptor as any),
                         value: descriptor.name!,
                         data: descriptor
                     }
@@ -204,6 +235,7 @@ export class OrAddAssetDialog extends LitElement {
 
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
+        const customAssetItems = mapDescriptors(this.customAssetTypes);
         const lists: ListGroupItem[] = [];
         if (agentItems.length > 0) {
             lists.push(
@@ -221,6 +253,14 @@ export class OrAddAssetDialog extends LitElement {
                 }
             );
         }
+        if (customAssetItems.length > 0) {
+            lists.push(
+                {
+                    heading: i18next.t("custom_assets"),
+                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${customAssetItems}" id="custom-asset-list"></or-mwc-list>`
+                }
+            );
+        }
 
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
@@ -229,6 +269,15 @@ export class OrAddAssetDialog extends LitElement {
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
+                        <or-mwc-input type="${InputType.TEXT}" iconColor="black" icon="mdi-plus" placeholder="New Custom Asset"
+                            @or-mwc-input-changed="${(e: CustomEvent) => { 
+                                const el = e.target as HTMLInputElement;
+                                if (!this.customAssetTypes.some(({ name }) => name === el.value)) {
+                                    this.customAssetTypes.push({ descriptorType: 'custom', name: el.value, value: { name: el.value } })
+                                    this.requestUpdate("customAssetTypes");
+                                }
+                            }}" 
+                        />
                     </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
@@ -244,7 +293,7 @@ export class OrAddAssetDialog extends LitElement {
         `;
     }
 
-    protected getTypeTemplate(descriptor: AgentDescriptor | AssetDescriptor, parentStr: string) {
+    protected getTypeTemplate(descriptor: Descriptors, parentStr: string) {
 
         if (!descriptor.name) {
             return false;
@@ -253,6 +302,14 @@ export class OrAddAssetDialog extends LitElement {
         const assetTypeInfo = AssetModelUtil.getAssetTypeInfo(descriptor.name),
             attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
             optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
+
+        if (descriptor.descriptorType === 'custom') {
+            return html`<or-ace-editor 
+                    .value="${descriptor.value}"
+                    @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
+                    }}"
+                ></or-ace-editor>`
+        }
 
         return html`
             <div id="type-title">
@@ -309,7 +366,7 @@ export class OrAddAssetDialog extends LitElement {
         await this.updateComplete;
 
         this.selectedAttributes = [];
-        this.selectedType = listItem.data as AssetDescriptor | AgentDescriptor;
+        this.selectedType = listItem.data as Descriptors;
 
         // Deselect other list selection
         const otherList = isAgent ? this.assetList : this.agentList;
