@@ -67,6 +67,11 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     
     @Override
     public void addCustomAsset(RequestParams requestParams, String json) {
-        assetModelService.addAssetType(json);
+        assetModelService.addCustomAssetType(json);
+    }
+
+    @Override
+    public void deleteCustomAsset(RequestParams requestParams, String assetType) {
+        assetModelService.deleteCustomAssetType(assetType);
     }
 }

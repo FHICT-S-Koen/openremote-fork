@@ -107,4 +107,9 @@ public interface AssetModelResource {
     @Consumes(APPLICATION_JSON)
     @Operation(operationId = "addCustomAsset", summary = "Adds a custom asset type")
     void addCustomAsset(@BeanParam RequestParams requestParams, @RequestBody String json);
+
+    @DELETE
+    @Path("customAsset/{assetType}")
+    @Operation(operationId = "deleteCustomAsset", summary = "Deletes a custom asset type")
+    void deleteCustomAsset(@BeanParam RequestParams requestParams, @PathParam("assetType") String assetType);
 }
