@@ -269,11 +269,16 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
     }
 
-    public void addCustomAssetType(String json) {
+    private Path getPathForCustomAssetType(String name) {
+        String fileName = String.format("%s.json", name);
+        return Paths.get(storageDir.toString(), fileName);
+    }
+
+    public void addCustomAssetType(String content) {
         String fileName;
 
         try {
-            JsonNode node = new ObjectMapper().readTree(json);
+            JsonNode node = new ObjectMapper().readTree(content);
 
             if (!node.has("name")) {
                 throw new Exception("Asset type JSON does not contain the required name field");
@@ -285,19 +290,27 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
             return;
         }
 
-        fileName = String.format("%s.json", fileName);
-        Path fullPath = Paths.get(storageDir.toString(), fileName);
+        Path fullPath = getPathForCustomAssetType(fileName);
 
         try {
-            Files.writeString(fullPath, json);
+            Files.writeString(fullPath, content);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to save custom asset types" + e.getMessage());
         }
     }
 
+    public void updateCustomAssetType(String assetType, String content) {
+        Path fullPath = getPathForCustomAssetType(assetType);
+
+        try {
+            Files.writeString(fullPath, content);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to update custom asset type " + assetType + e.getMessage());
+        }
+    }
+
     public void deleteCustomAssetType(String assetType) {
-        String fileName = String.format("%s.json", assetType);
-        Path fullPath = Paths.get(storageDir.toString(), fileName);
+        Path fullPath = getPathForCustomAssetType(assetType);
 
         try {
             Files.deleteIfExists(fullPath);

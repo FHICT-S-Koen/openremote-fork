@@ -106,7 +106,13 @@ public interface AssetModelResource {
     @Path("customAsset")
     @Consumes(APPLICATION_JSON)
     @Operation(operationId = "addCustomAsset", summary = "Adds a custom asset type")
-    void addCustomAsset(@BeanParam RequestParams requestParams, @RequestBody String json);
+    void addCustomAsset(@BeanParam RequestParams requestParams, @RequestBody String content);
+
+    @PUT
+    @Path("customAsset/{assetType}")
+    @Consumes(APPLICATION_JSON)
+    @Operation(operationId = "updateCustomAsset", summary = "Updates a custom asset type")
+    void updateCustomAsset(@BeanParam RequestParams requestParams, @PathParam("assetType") String assetType, @RequestBody String content);
 
     @DELETE
     @Path("customAsset/{assetType}")
