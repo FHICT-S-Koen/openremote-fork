@@ -269,7 +269,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
     }
 
-    public void addAssetType(String json) {
+    public void addCustomAssetType(String json) {
         String fileName;
 
         try {
@@ -292,6 +292,17 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
             Files.writeString(fullPath, json);
         } catch (IOException e) {
             LOG.log(Level.SEVERE, "Failed to save custom asset types" + e.getMessage());
+        }
+    }
+
+    public void deleteCustomAssetType(String assetType) {
+        String fileName = String.format("%s.json", assetType);
+        Path fullPath = Paths.get(storageDir.toString(), fileName);
+
+        try {
+            Files.deleteIfExists(fullPath);
+        } catch (IOException e) {
+            LOG.log(Level.SEVERE, "Failed to delete custom asset types" + e.getMessage());
         }
     }
 
