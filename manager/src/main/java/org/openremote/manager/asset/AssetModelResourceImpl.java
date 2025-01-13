@@ -64,7 +64,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     public Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(RequestParams requestParams, String parentId) {
         return assetModelService.getMetaItemDescriptors(parentId);
     }
-    
+
     @Override
     public void addCustomAsset(RequestParams requestParams, String content) {
         assetModelService.addCustomAssetType(content);

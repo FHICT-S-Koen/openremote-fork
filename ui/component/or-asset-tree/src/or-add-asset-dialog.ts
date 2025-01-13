@@ -98,22 +98,24 @@ export class OrAddAssetDialog extends LitElement {
             #name-wrapper {
                 display: flex;
                 flex-direction: column;
-                margin-top: 12px;
+                margin-top: var(--spacing-unit, 12px);
             }
 
             #toggle-parent-selector,
             #remove-parent {
                 flex: 0 0 50px;
-                margin: 4px 0 0 5px;
+                margin: var(--spacing-unit, 4px) 0 0 var(--spacing-unit, 5px);
             }
 
             #name-input,
             #parent-wrapper {
-                margin: 10px 0;
+                margin: var(--spacing-unit, 10px) 0;
             }
 
             #parent-wrapper {
                 display: flex;
+                justify-content: space-between;
+                align-items: center;
             }
 
             #parent {
@@ -121,18 +123,19 @@ export class OrAddAssetDialog extends LitElement {
             }
             
             #parent-selector {
-                max-width: 250px;
-                border-left: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+            max-width: 250px;
+            border-left: 1px solid var(--or-app-color5, #ccc);
             }
             
             #mdc-dialog-form-add {
                 display: flex;
-                height: 600px;
-                width: 1000px;
+                height: 80vh; 
+                width: 90vw; 
+                max-width: 600px; 
                 border-style: solid;
                 border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
-                border-width: 1px 0;
             }
+
 
             .msg {
                 display: flex;
@@ -192,6 +195,24 @@ export class OrAddAssetDialog extends LitElement {
                 cursor: pointer;
             }
 
+            #add-custom-asset {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                font-family: "Segoe UI", Helvetica,Arial,sans-serif,"Apple Color Emoji","Segoe UI Emoji","Segoe UI Symbol";
+                font-size: 14px;
+                width: 100%;
+                height: 48px;
+                color: var(--or-app-color3, ${unsafeCSS(DefaultColor3)});
+                transition: opacity 15ms linear, background-color 15ms linear;
+                user-select: none;
+            }
+            #add-custom-asset:hover {
+                background-color: var(--mdc-ripple-color, #000);
+                cursor: pointer;
+            }
+
             .heading,
             .mdc-list-group__subheader {
                 text-transform: uppercase;
@@ -210,6 +231,22 @@ export class OrAddAssetDialog extends LitElement {
         `;
     }
     
+
+    editCustomAsset(assetName: string) {
+        const asset = this.customAssetTypes.find(item => item.name === assetName);
+        if (asset) {
+            this.nameInput.value = asset.name!;
+            this.selectedType = asset;
+        }
+    }
+
+    deleteCustomAsset(assetName: string) {
+        this.customAssetTypes = this.customAssetTypes.filter(asset => asset.name !== assetName);
+        this.requestUpdate("customAssetTypes");
+    }
+
+
+
     constructor() {
         super();
         this.addEventListener(OrAssetTreeSelectionEvent.NAME, (event: OrAssetTreeSelectionEvent) => {
@@ -257,10 +294,22 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("custom_assets"),
-                    list: html`<or-mwc-list @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}" .listItems="${customAssetItems}" id="custom-asset-list"></or-mwc-list>`
+                    list: html`${customAssetItems.map(
+                        (item) =>
+                            html`
+                                <div style="display: flex; align-items: center; justify-content: space-between; margin: 8px 0;">
+                                    <span>${item.text}</span>
+                                    <div>
+                                        <button @click="${() => this.editCustomAsset(item.value)}">Edit</button>
+                                        <button @click="${() => this.deleteCustomAsset(item.value)}" style="margin-left: 8px;">Delete</button>
+                                    </div>
+                                </div>
+                            `
+                    )}`
                 }
             );
         }
+
 
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
@@ -269,16 +318,24 @@ export class OrAddAssetDialog extends LitElement {
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
-                        <or-mwc-input type="${InputType.TEXT}" iconColor="black" icon="mdi-plus" placeholder="New Custom Asset"
+                        <or-mwc-input type="${InputType.TEXT}" iconColor="black" icon="mdi-plus" placeholder="New or Edit Custom Asset"
                             @or-mwc-input-changed="${(e: CustomEvent) => { 
                                 const el = e.target as HTMLInputElement;
-                                if (!this.customAssetTypes.some(({ name }) => name === el.value)) {
-                                    this.customAssetTypes.push({ descriptorType: 'custom', name: el.value, value: { name: el.value } })
+
+                                
+                                if (this.selectedType && this.selectedType.descriptorType === 'custom') {
+                                    this.selectedType.name = el.value;
+                                    this.selectedType.value.name = el.value;
                                     this.requestUpdate("customAssetTypes");
+                                } else {
+                                    
+                                    if (!this.customAssetTypes.some(({ name }) => name === el.value)) {
+                                        this.customAssetTypes.push({ descriptorType: 'custom', name: el.value, value: { name: el.value } });
+                                        this.requestUpdate("customAssetTypes");
+                                    }
                                 }
                             }}" 
                         />
-                    </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
                         ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
