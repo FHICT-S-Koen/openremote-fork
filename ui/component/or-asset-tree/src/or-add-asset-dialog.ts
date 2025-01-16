@@ -318,6 +318,7 @@ export class OrAddAssetDialog extends LitElement {
                                 }
                             }}" 
                         />
+                    </div>
                     <div id="asset-type-option-container" class="col">
                         ${!this.selectedType 
                         ? html`<div class="msg"><or-translate value="noAssetTypeSelected"></or-translate></div>`
