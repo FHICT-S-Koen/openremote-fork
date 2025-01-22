@@ -98,24 +98,22 @@ export class OrAddAssetDialog extends LitElement {
             #name-wrapper {
                 display: flex;
                 flex-direction: column;
-                margin-top: var(--spacing-unit, 12px);
+                margin-top: 12px;
             }
 
             #toggle-parent-selector,
             #remove-parent {
                 flex: 0 0 50px;
-                margin: var(--spacing-unit, 4px) 0 0 var(--spacing-unit, 5px);
+                margin: 4px 0 0 5px;
             }
 
             #name-input,
             #parent-wrapper {
-                margin: var(--spacing-unit, 10px) 0;
+                margin: 10px 0;
             }
 
             #parent-wrapper {
                 display: flex;
-                justify-content: space-between;
-                align-items: center;
             }
 
             #parent {
@@ -123,19 +121,18 @@ export class OrAddAssetDialog extends LitElement {
             }
             
             #parent-selector {
-            max-width: 250px;
-            border-left: 1px solid var(--or-app-color5, #ccc);
+                max-width: 250px;
+                border-left: 1px solid var(--or-app-color5, ${unsafeCSS(DefaultColor5)})
             }
             
             #mdc-dialog-form-add {
                 display: flex;
-                height: 80vh; 
-                width: 90vw; 
-                max-width: 600px; 
+                height: 600px;
+                width: 1000px;
                 border-style: solid;
                 border-color: var(--or-app-color5, ${unsafeCSS(DefaultColor5)});
+                border-width: 1px 0;
             }
-
 
             .msg {
                 display: flex;
@@ -304,13 +301,11 @@ export class OrAddAssetDialog extends LitElement {
                             @or-mwc-input-changed="${(e: CustomEvent) => { 
                                 const el = e.target as HTMLInputElement;
 
-                                
                                 if (this.selectedType && this.selectedType.descriptorType === 'custom') {
                                     this.selectedType.name = el.value;
                                     this.selectedType.value.name = el.value;
                                     this.requestUpdate("customAssetTypes");
                                 } else {
-                                    
                                     if (!this.customAssetTypes.some(({ name }) => name === el.value)) {
                                         this.customAssetTypes.push({ descriptorType: 'custom', name: el.value, value: { name: el.value } });
                                         this.requestUpdate("customAssetTypes");
