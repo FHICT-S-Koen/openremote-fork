@@ -530,8 +530,139 @@ export class Manager implements EventProviderFactory {
             const valueDescriptorResponse = await rest.api.AssetModelResource.getValueDescriptors();
 
             AssetModelUtil._assetTypeInfos = assetInfosResponse.data;
+
+            AssetModelUtil._assetTypeInfos.push({
+                "assetDescriptor": {
+                  "descriptorType": "custom",
+                  "name": "default",
+                  "icon": "help",
+                  "colour": "000000"
+                },
+                "attributeDescriptors": [
+                  {
+                    "name": "notes",
+                    "type": "text",
+                    "format": {
+                      "multiline": true
+                    }
+                  },
+                  {
+                    "name": "location",
+                    "type": "GEO_JSONPoint"
+                  },
+                  {
+                    "name": "model",
+                    "type": "text",
+                    "optional": true
+                  },
+                  {
+                    "name": "email",
+                    "type": "email",
+                    "optional": true
+                  },
+                  {
+                    "name": "tags",
+                    "type": "text[]",
+                    "optional": true
+                  },
+                  {
+                    "name": "manufacturer",
+                    "type": "text",
+                    "optional": true
+                  },
+                  {
+                    "name": "onOff",
+                    "type": "boolean",
+                    "format": {
+                      "asOnOff": true
+                    }
+                  }
+                ],
+                "metaItemDescriptors": [
+                  "agentLink",
+                  "attributeLinks",
+                  "accessPublicRead",
+                  "accessPublicWrite",
+                  "accessRestrictedRead",
+                  "accessRestrictedWrite",
+                  "readOnly",
+                  "storeDataPoints",
+                  "dataPointsMaxAgeDays",
+                  "hasPredictedDataPoints",
+                  "forecast",
+                  "ruleState",
+                  "ruleResetImmediate",
+                  "label",
+                  "format",
+                  "units",
+                  "constraints",
+                  "secret",
+                  "multiline",
+                  "showOnDashboard",
+                  "momentary",
+                  "userConnected"
+                ],
+                "valueDescriptors": [
+                  "boolean",
+                  "booleanMap",
+                  "integer",
+                  "long",
+                  "bigInteger",
+                  "integerMap",
+                  "number",
+                  "numberMap",
+                  "bigNumber",
+                  "text",
+                  "textMap",
+                  "JSONObject",
+                  "JSON",
+                  "multivaluedTextMap",
+                  "positiveInteger",
+                  "negativeInteger",
+                  "positiveNumber",
+                  "negativeNumber",
+                  "integerByte",
+                  "byte",
+                  "timestamp",
+                  "timestampISO8601",
+                  "dateAndTime",
+                  "timeDurationISO8601",
+                  "periodDurationISO8601",
+                  "timeAndPeriodDurationISO8601",
+                  "email",
+                  "UUID",
+                  "assetID",
+                  "assetType",
+                  "direction",
+                  "TCP_IPPortNumber",
+                  "hostOrIPAddress",
+                  "IPAddress",
+                  "attributeLink",
+                  "attributeReference",
+                  "attributeState",
+                  "GEO_JSONPoint",
+                  "calendarEvent",
+                  "executionStatus",
+                  "connectionStatus",
+                  "consoleProviders",
+                  "colourRGB",
+                  "oAuthGrant",
+                  "usernameAndPassword",
+                  "valueFormat",
+                  "valueConstraint",
+                  "agentLink",
+                  "CRONExpression",
+                  "HTTP_URL",
+                  "WS_URL",
+                  "assetQuery",
+                  "forecastConfiguration",
+                  "valueDescriptor"
+                ]
+              })
+
             AssetModelUtil._metaItemDescriptors = Object.values(metaItemDescriptorResponse.data);
             AssetModelUtil._valueDescriptors = Object.values(valueDescriptorResponse.data);
+            // push values onto assetTypeInfos and ValueDescriptors
         } catch (e) {
             console.error(e);
             return false;

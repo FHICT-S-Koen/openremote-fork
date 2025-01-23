@@ -1,7 +1,8 @@
 import {css, html, LitElement, unsafeCSS} from "lit";
-import {customElement, property, query} from "lit/decorators.js";
-import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil} from "@openremote/model";
+import {customElement, property, query, state} from "lit/decorators.js";
+import {AgentDescriptor, Asset, AssetDescriptor, AttributeDescriptor, AssetModelUtil, AssetTypeInfo} from "@openremote/model";
 import "@openremote/or-mwc-components/or-mwc-input";
+import rest from "@openremote/rest";
 import {AssetTreeConfig, OrAssetTreeSelectionEvent} from "./index";
 import {
     createListGroup,
@@ -16,13 +17,13 @@ import {InputType, OrMwcInput, OrInputChangedEvent} from "@openremote/or-mwc-com
 import "@openremote/or-components/or-ace-editor";
 import { OrAceEditor, OrAceEditorChangedEvent } from "@openremote/or-components/or-ace-editor";
 
-type CustomDescriptor = { descriptorType: 'custom'
-    name?: string;
-    value: { name: string };
-    icon?: string;
-    colour?: string;
- };
-type Descriptors = AssetDescriptor | AgentDescriptor | CustomDescriptor
+// type CustomDescriptor = { descriptorType: 'custom'
+//     name?: string;
+//     value: { name: string };
+//     icon?: string;
+//     colour?: string;
+//  };
+type Descriptors = AssetDescriptor | AgentDescriptor
 
 export type OrAddAssetDetail = {
     name: string | undefined;
@@ -61,7 +62,7 @@ export class OrAddAssetDialog extends LitElement {
     public assetTypes!: AssetDescriptor[];
 
     @property({attribute: false})
-    public customAssetTypes: CustomDescriptor[] = [];
+    public customAssetTypes!: AssetDescriptor[];
 
     @property({attribute: false})
     public parent?: Asset;
@@ -91,6 +92,17 @@ export class OrAddAssetDialog extends LitElement {
 
     @query("#parent-asset-list")
     protected parentAssetList?: OrMwcList;
+
+    @state()
+    protected editMode: boolean = true;
+
+    // @property({attribute: false})
+    // protected customTypeChanged: boolean = false;
+
+    @state()
+    protected customTypeChanged = false;
+
+    public selectedCustomType?: string;
 
     public static get styles() {
         // language=CSS
@@ -210,22 +222,6 @@ export class OrAddAssetDialog extends LitElement {
         `;
     }
     
-
-    editCustomAsset(assetName: string) {
-        const asset = this.customAssetTypes.find(item => item.name === assetName);
-        if (asset) {
-            this.nameInput.value = asset.name!;
-            this.selectedType = asset;
-        }
-    }
-
-    deleteCustomAsset(assetName: string) {
-        this.customAssetTypes = this.customAssetTypes.filter(asset => asset.name !== assetName);
-        this.requestUpdate("customAssetTypes");
-    }
-
-
-
     constructor() {
         super();
         this.addEventListener(OrAssetTreeSelectionEvent.NAME, (event: OrAssetTreeSelectionEvent) => {
@@ -252,6 +248,7 @@ export class OrAddAssetDialog extends LitElement {
         const agentItems = mapDescriptors(this.agentTypes);
         const assetItems = mapDescriptors(this.assetTypes);
         const customAssetItems = mapDescriptors(this.customAssetTypes);
+
         const lists: ListGroupItem[] = [];
         if (agentItems.length > 0) {
             lists.push(
@@ -269,8 +266,7 @@ export class OrAddAssetDialog extends LitElement {
                 }
             );
         }
-        console.log(assetItems[1])
-        console.log(this.assetTypes[1])
+
         if (customAssetItems.length > 0) {
             lists.push(
                 {
@@ -289,14 +285,6 @@ export class OrAddAssetDialog extends LitElement {
                 }
             );
         }
-        
-//                                 <div style="display: flex; align-items: center; justify-content: space-between; margin: 8px 0;">
-//                                     <span>${item.text}</span>
-//                                     <div>
-//                                         <button @click="${() => this.editCustomAsset(item.value)}">Edit</button>
-//                                         <button @click="${() => this.deleteCustomAsset(item.value)}" style="margin-left: 8px;">Delete</button>
-//                                     </div>
-//                                 </div>
 
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
@@ -305,19 +293,18 @@ export class OrAddAssetDialog extends LitElement {
                 <form id="mdc-dialog-form-add" class="row">
                     <div id="type-list" class="col">
                         ${createListGroup(lists)}
-                        <or-mwc-input type="${InputType.TEXT}" iconColor="black" icon="mdi-plus" placeholder="New or Edit Custom Asset"
+                        <or-mwc-input type="${InputType.TEXT}" iconColor="black" icon="mdi-plus" placeholder="New Custom Asset"
                             @or-mwc-input-changed="${(e: CustomEvent) => { 
                                 const el = e.target as HTMLInputElement;
 
-                                if (this.selectedType && this.selectedType.descriptorType === 'custom') {
-                                    this.selectedType.name = el.value;
-                                    this.selectedType.value.name = el.value;
-                                    this.requestUpdate("customAssetTypes");
-                                } else {
-                                    if (!this.customAssetTypes.some(({ name }) => name === el.value)) {
-                                        this.customAssetTypes.push({ descriptorType: 'custom', name: el.value, value: { name: el.value } });
-                                        this.requestUpdate("customAssetTypes");
+                                if (!this.customAssetTypes.some(({ name }) => name === el.value)) {
+                                    const dsffd: AssetDescriptor = { 
+                                        descriptorType: 'custom',
+                                        name: el.value!, 
+                                        ...this.customAssetTypes.find(({ name}) => name === 'default')
                                     }
+                                    this.customAssetTypes.push(dsffd);
+                                    // this.requestUpdate("customAssetTypes");
                                 }
                             }}" 
                         />
@@ -338,6 +325,7 @@ export class OrAddAssetDialog extends LitElement {
 
     protected getTypeTemplate(descriptor: Descriptors, parentStr: string) {
 
+        console.log("descriptor", descriptor)
         if (!descriptor.name) {
             return false;
         }
@@ -346,10 +334,55 @@ export class OrAddAssetDialog extends LitElement {
             attributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !e.optional),
             optionalAttributes: AttributeDescriptor[] | undefined = assetTypeInfo?.attributeDescriptors?.filter(e => !!e.optional);
 
-        if (descriptor.descriptorType === 'custom') {
-            return html`<or-ace-editor 
-                    .value="${descriptor.value}"
+        // console.log(this.editMode)
+            // .disabled="${!this.selectedCustomType}"  
+        if (descriptor.descriptorType === 'custom' && this.editMode) {
+            return html`
+            <or-mwc-input id="edit-btn" 
+                outlined 
+                .type="${InputType.BUTTON}" 
+                .value="${this.editMode}" 
+                .label="${this.editMode ? i18next.t("save") : i18next.t("editAsset")}" 
+                icon="${this.editMode ? "" : "pencil"}"
+                @or-mwc-input-changed="${async () => {
+                    if (this.editMode && this.selectedCustomType) {
+                        await rest.api.AssetModelResource.addCustomAsset(this.selectedCustomType, { headers: {
+                            'Content-Type': 'application/json'} });
+                        const value = JSON.parse(this.selectedCustomType) as unknown as AssetTypeInfo;
+                        const idx = AssetModelUtil._assetTypeInfos.findIndex(({ assetDescriptor }) => assetDescriptor?.name === value.assetDescriptor?.name)
+                        if (idx > -1) {
+                            AssetModelUtil._assetTypeInfos[idx] = value;
+                        } else {
+                            AssetModelUtil._assetTypeInfos.push(value);
+                        }
+                        // this.requestUpdate("customAssetTypes");
+                    }
+                    console.log("before: ", this.editMode)
+                    this.editMode = !this.editMode;
+                    console.log("after: ", this.editMode)
+
+                    this.requestUpdate("editMode");
+                }}">
+            </or-mwc-input>
+            ${this.editMode
+                ? html`<or-mwc-input id="edit-btn" 
+                outlined 
+                .type="${InputType.BUTTON}"
+                .label="${i18next.t("delete")}" 
+                icon="delete"
+                @or-mwc-input-changed="${async () => {
+                    if (this.selectedType) {
+                        await rest.api.AssetModelResource.deleteCustomAsset(this.selectedType.name);
+                    }
+                }}">
+            </or-mwc-input>` : ''}
+            <or-ace-editor 
+                    .value="${{ assetDescriptor: descriptor, attributes, optionalAttributes }}"
                     @or-ace-editor-changed="${(ev: OrAceEditorChangedEvent) => {
+                        if (ev.detail.value) {
+                            this.selectedCustomType = ev.detail.value;
+                            // this.customTypeChanged = true
+                        }
                     }}"
                 ></or-ace-editor>`
         }

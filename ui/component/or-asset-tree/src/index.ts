@@ -1361,7 +1361,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const types = this._getAllowedChildTypes(this._selectedNodes[0]);
         const agentTypes = types.filter((t) => t.descriptorType === "agent");
         const assetTypes = types.filter((t) => t.descriptorType === "asset");
-        // const customAssetTypes = types.filter((t) => t.descriptorType === "custom") ?? [];
+        const customAssetTypes = types.filter((t) => t.descriptorType === "custom");
         const parent = this._selectedNodes && this._selectedNodes.length === 1 ? this._selectedNodes[0].asset : undefined;
         let dialog: OrMwcDialog;
 
