@@ -66,7 +66,7 @@ public class AssetModelResourceImpl extends ManagerWebResource implements AssetM
     }
 
     @Override
-    public Map<String, String> listCustomAssets(RequestParams requestParams) {
+    public Map<String, Object> listCustomAssets(RequestParams requestParams) {
         return assetModelService.getCustomAssetTypes();
     }
     

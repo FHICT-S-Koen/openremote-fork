@@ -271,8 +271,8 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         }
     }
 
-    public Map<String, String> getCustomAssetTypes() {
-        Map<String, String> customAssetTypes = new HashMap<>();
+    public Map<String, Object> getCustomAssetTypes() {
+        Map<String, Object> customAssetTypes = new HashMap<>();
 
         try (Stream<Path> stream = Files.list(storageDir)) {
             customAssetTypes = stream
@@ -281,7 +281,7 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
                             path -> path.getFileName().toString().replaceFirst("\\.json$", ""),
                             path -> {
                                 try {
-                                    return Files.readString(path, StandardCharsets.UTF_8);
+                                    return ValueUtil.JSON.readValue(path.toFile(), Map.class);
                                 } catch (IOException e) {
                                     throw new UncheckedIOException(e);
                                 }

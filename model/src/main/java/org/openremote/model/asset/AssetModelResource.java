@@ -106,7 +106,7 @@ public interface AssetModelResource {
     @Path("customAsset")
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "listCustomAsset", summary = "Lists all custom assets")
-    Map<String, String> listCustomAssets(@BeanParam RequestParams requestParams);
+    Map<String, Object> listCustomAssets(@BeanParam RequestParams requestParams);
     
     @POST
     @Path("customAsset")
