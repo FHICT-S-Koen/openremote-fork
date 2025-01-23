@@ -278,13 +278,9 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         String fileName;
 
         try {
-            JsonNode node = new ObjectMapper().readTree(content);
+            JsonNode node = ValueUtil.JSON.readTree(content);
 
-            if (!node.has("name")) {
-                throw new Exception("Asset type JSON does not contain the required name field");
-            }
-
-            fileName = node.get("name").asText();
+            fileName = node.get("assetDescriptor").get("name").asText();
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to parse asset type json", e);
             return;
