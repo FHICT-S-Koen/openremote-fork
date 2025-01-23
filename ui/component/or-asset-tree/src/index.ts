@@ -1374,7 +1374,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         dialog = showDialog(new OrMwcDialog()
             .setHeading(i18next.t("addAsset"))
             .setContent(html`
-                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
+                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .customAssetTypes="${customAssetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
                 `)
             .setActions([
                     {
