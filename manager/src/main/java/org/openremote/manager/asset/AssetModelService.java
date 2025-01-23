@@ -52,6 +52,8 @@ import org.openremote.model.value.MetaItemDescriptor;
 import org.openremote.model.value.ValueDescriptor;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -267,6 +269,29 @@ public class AssetModelService extends RouteBuilder implements ContainerService,
         } catch (Exception e) {
             LOG.log(Level.SEVERE, "Failed to load custom asset types from '" + storageDir + "':" + e.getMessage());
         }
+    }
+
+    public Map<String, String> getCustomAssetTypes() {
+        Map<String, String> customAssetTypes = new HashMap<>();
+
+        try (Stream<Path> stream = Files.list(storageDir)) {
+            customAssetTypes = stream
+                    .filter(Files::isRegularFile)
+                    .collect(Collectors.toMap(
+                            path -> path.getFileName().toString().replaceFirst("\\.json$", ""),
+                            path -> {
+                                try {
+                                    return Files.readString(path, StandardCharsets.UTF_8);
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            }
+                    ));
+        } catch (IOException e) {
+            System.err.println("Error reading files: " + e.getMessage());
+        }
+
+        return customAssetTypes;
     }
 
     private Path getPathForCustomAssetType(String name) {

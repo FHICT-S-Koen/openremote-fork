@@ -101,6 +101,12 @@ public interface AssetModelResource {
     @Produces(APPLICATION_JSON)
     @Operation(operationId = "getMetaItemDescriptors", summary = "Retrieve the available meta item descriptors")
     Map<String, MetaItemDescriptor<?>> getMetaItemDescriptors(@BeanParam RequestParams requestParams, @QueryParam("parentId") String parentId);
+
+    @GET
+    @Path("customAsset")
+    @Produces(APPLICATION_JSON)
+    @Operation(operationId = "listCustomAsset", summary = "Lists all custom assets")
+    Map<String, String> listCustomAssets(@BeanParam RequestParams requestParams);
     
     @POST
     @Path("customAsset")
