@@ -1361,6 +1361,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         const types = this._getAllowedChildTypes(this._selectedNodes[0]);
         const agentTypes = types.filter((t) => t.descriptorType === "agent");
         const assetTypes = types.filter((t) => t.descriptorType === "asset");
+        const customAssetTypes = types.filter((t) => t.descriptorType === "custom") ?? [];
         const parent = this._selectedNodes && this._selectedNodes.length === 1 ? this._selectedNodes[0].asset : undefined;
         let dialog: OrMwcDialog;
 
@@ -1373,7 +1374,7 @@ export class OrAssetTree extends subscribe(manager)(LitElement) {
         dialog = showDialog(new OrMwcDialog()
             .setHeading(i18next.t("addAsset"))
             .setContent(html`
-                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
+                    <or-add-asset-dialog id="add-panel" .config="${this.config}" .agentTypes="${agentTypes}" .assetTypes="${assetTypes}" .customAssetTypes="${customAssetTypes}" .parent="${parent}" @or-add-asset-changed="${onAddChanged}"></or-add-asset-dialog>
                 `)
             .setActions([
                     {

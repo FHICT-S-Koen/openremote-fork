@@ -269,6 +269,8 @@ export class OrAddAssetDialog extends LitElement {
                 }
             );
         }
+        console.log(assetItems[1])
+        console.log(this.assetTypes[1])
         if (customAssetItems.length > 0) {
             lists.push(
                 {
@@ -276,19 +278,25 @@ export class OrAddAssetDialog extends LitElement {
                     list: html`${customAssetItems.map(
                         (item) =>
                             html`
-                                <div style="display: flex; align-items: center; justify-content: space-between; margin: 8px 0;">
-                                    <span>${item.text}</span>
-                                    <div>
-                                        <button @click="${() => this.editCustomAsset(item.value)}">Edit</button>
-                                        <button @click="${() => this.deleteCustomAsset(item.value)}" style="margin-left: 8px;">Delete</button>
-                                    </div>
-                                </div>
+                                <or-mwc-list
+                                    @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
+                                        if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}"
+                                    .listItems="${customAssetItems}"
+                                    id="asset-list">
+                                </or-mwc-list>
                             `
                     )}`
                 }
             );
         }
         
+//                                 <div style="display: flex; align-items: center; justify-content: space-between; margin: 8px 0;">
+//                                     <span>${item.text}</span>
+//                                     <div>
+//                                         <button @click="${() => this.editCustomAsset(item.value)}">Edit</button>
+//                                         <button @click="${() => this.deleteCustomAsset(item.value)}" style="margin-left: 8px;">Delete</button>
+//                                     </div>
+//                                 </div>
 
         const parentStr = this.parent ? this.parent.name + " (" + this.parent.id + ")" : i18next.t("none");
 
