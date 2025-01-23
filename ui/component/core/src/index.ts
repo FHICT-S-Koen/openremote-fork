@@ -533,7 +533,7 @@ export class Manager implements EventProviderFactory {
 
             const response = await rest.api.AssetModelResource.listCustomAssets();
             // console.log(AssetModelUtil._assetTypeInfos)
-            AssetModelUtil._assetTypeInfos.push(...Object.values(response.data).map(({ assetDescriptor, attributes, optionalAttributes  }) => ({ 
+            const data = Object.values(response.data).map(({ assetDescriptor, attributes, optionalAttributes  }) => ({ 
                 assetDescriptor, 
                 "attributeDescriptors": [...attributes, ...optionalAttributes],
                 "metaItemDescriptors": [
@@ -616,7 +616,9 @@ export class Manager implements EventProviderFactory {
                     "forecastConfiguration",
                     "valueDescriptor"
                   ]
-            }) ))
+            }) )
+            console.log("DATA", data);
+            AssetModelUtil._assetTypeInfos.push(...data)
 
             AssetModelUtil._assetTypeInfos.push({
                 "assetDescriptor": {

@@ -271,17 +271,14 @@ export class OrAddAssetDialog extends LitElement {
             lists.push(
                 {
                     heading: i18next.t("custom_assets"),
-                    list: html`${customAssetItems.map(
-                        (item) =>
-                            html`
-                                <or-mwc-list
-                                    @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
-                                        if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}"
-                                    .listItems="${customAssetItems}"
-                                    id="asset-list">
-                                </or-mwc-list>
-                            `
-                    )}`
+                    list: html`
+                        <or-mwc-list
+                            @or-mwc-list-changed="${(evt: OrMwcListChangedEvent) => {
+                                if (evt.detail.length === 1) this.onTypeChanged(false, evt.detail[0] as ListItem); }}"
+                            .listItems="${customAssetItems}"
+                            id="asset-list">
+                        </or-mwc-list>
+                    `
                 }
             );
         }
@@ -303,7 +300,7 @@ export class OrAddAssetDialog extends LitElement {
                                         name: el.value!, 
                                         ...this.customAssetTypes.find(({ name}) => name === 'default')
                                     }
-                                    this.customAssetTypes.push(dsffd);
+                                    // this.customAssetTypes.push(dsffd);
                                     // this.requestUpdate("customAssetTypes");
                                 }
                             }}" 
@@ -348,13 +345,13 @@ export class OrAddAssetDialog extends LitElement {
                     if (this.editMode && this.selectedCustomType) {
                         await rest.api.AssetModelResource.addCustomAsset(this.selectedCustomType, { headers: {
                             'Content-Type': 'application/json'} });
-                        const value = JSON.parse(this.selectedCustomType) as unknown as AssetTypeInfo;
-                        const idx = AssetModelUtil._assetTypeInfos.findIndex(({ assetDescriptor }) => assetDescriptor?.name === value.assetDescriptor?.name)
-                        if (idx > -1) {
-                            AssetModelUtil._assetTypeInfos[idx] = value;
-                        } else {
-                            AssetModelUtil._assetTypeInfos.push(value);
-                        }
+                        // const value = JSON.parse(this.selectedCustomType) as unknown as AssetTypeInfo;
+                        // const idx = AssetModelUtil._assetTypeInfos.findIndex(({ assetDescriptor }) => assetDescriptor?.name === value.assetDescriptor?.name)
+                        // if (idx > -1) {
+                        //     AssetModelUtil._assetTypeInfos[idx] = value;
+                        // } else {
+                        //     AssetModelUtil._assetTypeInfos.push(value);
+                        // }
                         // this.requestUpdate("customAssetTypes");
                     }
                     console.log("before: ", this.editMode)
@@ -373,6 +370,7 @@ export class OrAddAssetDialog extends LitElement {
                 @or-mwc-input-changed="${async () => {
                     if (this.selectedType) {
                         await rest.api.AssetModelResource.deleteCustomAsset(this.selectedType.name);
+                        window.location.reload();
                     }
                 }}">
             </or-mwc-input>` : ''}
