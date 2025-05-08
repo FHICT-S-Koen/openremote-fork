@@ -9,6 +9,11 @@
     "ui/demo/*"
   ],
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@openremote/util": "workspace:*",
+    "@playwright/test": "1.50.1"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "codegen": "playwright codegen"
   }
 }
