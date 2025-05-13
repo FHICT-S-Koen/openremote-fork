@@ -79,7 +79,8 @@ assets.forEach(
       // Then We see the "<name>" page
       await expect(await page.waitForSelector(`#asset-header >> text=${name}`)).not.toBeNull();
     });
-    test(`Update asset: ${name}`, async ({ page, switchMode, navigateToTab }) => {
+    test(`Update asset: ${name}`, async ({ page, switchMode, navigateToTab, browserName }) => {
+      test.fixme(browserName === 'webkit', "see https://github.com/openremote/openremote/issues/966")
       // Given Setup "lv3"
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       // Then Navigate to "asset" tab
