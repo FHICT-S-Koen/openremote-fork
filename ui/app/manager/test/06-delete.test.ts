@@ -1,19 +1,21 @@
 import { expect } from "@playwright/test";
-import { test } from "./fixtures/test.js";
+import { test } from "./fixtures/manager.js";
+import { users } from "./fixtures/data/users.js";
+import { preparedAssets } from "./fixtures/data/assets.js";
 
-test.beforeEach(async ({ setup, login, goToRealmStartPage }) => {
-  await goToRealmStartPage("master");
+test.beforeEach(async ({ manager }) => {
+  // Given the Realm "smartcity" with the user "smartcity" and assets is setup
+  await manager.setup("smartcity", users.smartcity, preparedAssets);
   // When Login to OpenRemote "master" realm as "admin"
-  await login("admin");
+  await manager.goToRealmStartPage("master");
+  await manager.login("admin");
 });
 
-test("Delete assets", async ({ page, deleteSelectedAsset }) => {
-  // Given Setup "lv3"
-  // When Login to OpenRemote "smartcity" realm as "smartcity"
+test("Delete assets", async ({ page, assetsPage }) => {
   // When Delete assets
-  await deleteSelectedAsset("Battery");
+  await assetsPage.deleteSelectedAsset("Battery");
   await page.waitForTimeout(500);
-  await deleteSelectedAsset("Solar Panel");
+  await assetsPage.deleteSelectedAsset("Solar Panel");
 
   // must wait to confirm that assets have been deleted
   await page.waitForTimeout(500);
@@ -23,13 +25,11 @@ test("Delete assets", async ({ page, deleteSelectedAsset }) => {
   await expect(page.locator("text=Battery")).toHaveCount(0);
 });
 
-test("Delete user", async ({ page, switchToRealmByRealmPicker, navigateToMenuItem }) => {
-  // Given Setup "lv2"
-  // When Login to OpenRemote "master" realm as "admin"
+test("Delete user", async ({ page, manager }) => {
   // Then Switch to "smartcity" realm
-  await switchToRealmByRealmPicker("smartcity")
+  await manager.switchToRealmByRealmPicker("smartcity");
   // When Navigate to "Users" page
-  await navigateToMenuItem("Users");
+  await manager.navigateToMenuItem("Users");
   // Then Delete user
   await page.click('td:has-text("smartcity")');
   await page.click('button:has-text("delete")');
@@ -40,11 +40,11 @@ test("Delete user", async ({ page, switchToRealmByRealmPicker, navigateToMenuIte
   await expect(page.locator(`td:has-text("smartcity")`)).toHaveCount(0);
 });
 
-test("Delete role", async ({ page, switchToRealmByRealmPicker, navigateToMenuItem }) => {
+test("Delete role", async ({ page, manager }) => {
   // Then Switch to "smartcity" realm
-  await switchToRealmByRealmPicker("smartcity")
+  await manager.switchToRealmByRealmPicker("smartcity");
   // Then Navigate to "Roles" page
-  await navigateToMenuItem("Roles");
+  await manager.navigateToMenuItem("Roles");
   // Then Create a new role
   // Then Delete role
   await page.click("text=Custom");
@@ -56,13 +56,13 @@ test("Delete role", async ({ page, switchToRealmByRealmPicker, navigateToMenuIte
   await expect(page.locator("text=Custom")).toHaveCount(0);
 });
 
-test("Delete realm", async ({ page, deleteRealm, goToRealmStartPage, navigateToMenuItem }) => {
+test("Delete realm", async ({ page, manager, realmsPage }) => {
   // When Navigate to "Realms" page
-  await navigateToMenuItem("Realms");
+  await manager.navigateToMenuItem("Realms");
   // Then Delete realm
-  await deleteRealm("smartcity");
+  await realmsPage.deleteRealm("smartcity");
   // Then We should not see the Realm picker
-  await goToRealmStartPage("master");
+  await manager.goToRealmStartPage("master");
   // must wait for the realm picker to be rendered
   await page.waitForTimeout(500);
   await expect(page.locator("#desktop-right #realm-picker")).not.toBeVisible();
