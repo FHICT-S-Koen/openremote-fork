@@ -209,14 +209,15 @@ class Manager {
           });
       }
     }
+
+    // TODO: consider login retry with timeout instead
+    this.page.waitForTimeout(400)
   }
 
   /**
    *  Clean up the environment
    */
   async cleanUp() {
-    console.info("cleanup", this.realm, this.user, this.assets);
-
     const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 

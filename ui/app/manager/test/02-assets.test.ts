@@ -110,7 +110,7 @@ assets.forEach(
         await page.click('button:has-text("Save")');
       }
     });
-    test.skip(`Set and cancel read-only for asset: ${name}`, async ({ page, manager, assetsPage }) => {
+    test(`Set and cancel read-only for asset: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
       await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssets });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
@@ -122,23 +122,22 @@ assets.forEach(
       await page.click(`text=${name}`);
       // Then Go to modify mode
       await assetsPage.switchMode("modify");
+      const readonlyLocator = page.getByRole("row", { name: /Read only/ }).locator("label");
       // Then Uncheck on readonly of "<attribute_1>"
-      await page.click(`td:has-text("${attr_1}") >> nth=0`);
-      // bad solution
-      // nth number is decided by the default state
-      // if default stete changes, please change the nth number
-      if (attr_1 == "energyLevel") await page.click("text=Read only >> nth=2");
-      else await page.click("text=Read only >> nth=1");
+      await page.getByRole("cell", { name: new RegExp(attr_1 + "$") }).click();
+      await readonlyLocator.waitFor({ state: "visible" });
+      await readonlyLocator.click();
+      await page.getByRole("cell", { name: new RegExp(attr_1 + "$") }).click();
       // Then Check on readonly of "<attribute_2>"
-      await page.click(`td:has-text("${attr_2}")`);
-      // bad solution
-      // in this case, i assume that the config items are as the beginning state, namely default state
-      // if the default state changes, the following nth-chlid should change as well
-      if (attr_2 == "efficiencyExport") await page.click(".item-add or-mwc-input #component >> nth=0");
-      else await page.click("tr:nth-child(14) td .meta-item-container div .item-add or-mwc-input #component");
-      await page.click('li[role="checkbox"]:has-text("Read only")');
-      await page.click('div[role="alertdialog"] button:has-text("Add")');
+      await page.getByRole("cell", { name: new RegExp(attr_2 + "$") }).click();
+      await readonlyLocator.waitFor({ state: "visible" });
+      await readonlyLocator.click();
+      await page.getByRole("cell", { name: new RegExp(attr_2 + "$") }).click();
       // Then Save
+      const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
+      if (isSaveBtnVisible) {
+        await page.click('button:has-text("Save")');
+      }
       // When Go to panel page
       await page.click('button:has-text("View")');
       await page.waitForTimeout(1500);
