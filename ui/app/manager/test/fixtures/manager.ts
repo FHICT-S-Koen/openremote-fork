@@ -211,7 +211,7 @@ class Manager {
     }
 
     // TODO: consider login retry with timeout instead
-    this.page.waitForTimeout(400)
+    this.page.waitForTimeout(400);
   }
 
   /**
@@ -313,6 +313,19 @@ class AssetsPage extends BasePage {
 
   async goto() {
     this.manager.navigateToMenuItem("Assets");
+  }
+
+  // TODO: move to shared app & component fixture
+  getAttributeLocator(attribute: string): Locator {
+    return this.page.getByRole("row", { name: new RegExp(`\\b${attribute}\\b`) });
+  }
+
+  // TODO: move to shared app & component fixture
+  getConfigurationItemLocator(attribute: string, item: string): Locator {
+    // match the sibling row i.e. the configuration item row of the attribute
+    return this.getAttributeLocator(attribute)
+      .locator("+ tr", { hasText: new RegExp(`\\b${item}\\b`) })
+      .locator("label");
   }
 
   /**

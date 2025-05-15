@@ -1,6 +1,6 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
-import assets, { preparedAssets } from "./fixtures/data/assets.js";
+import assets, { preparedAssets, preparedAssetsWithReadonly } from "./fixtures/data/assets.js";
 import { users } from "./fixtures/data/users.js";
 
 assets.forEach(
@@ -112,7 +112,7 @@ assets.forEach(
     });
     test(`Set and cancel read-only for asset: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-      await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssets });
+      await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssetsWithReadonly });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
@@ -122,17 +122,13 @@ assets.forEach(
       await page.click(`text=${name}`);
       // Then Go to modify mode
       await assetsPage.switchMode("modify");
-      const readonlyLocator = page.getByRole("row", { name: /Read only/ }).locator("label");
+      await page.getByRole("button", { name: "Expand all" }).click();
       // Then Uncheck on readonly of "<attribute_1>"
-      await page.getByRole("cell", { name: new RegExp(attr_1 + "$") }).click();
-      await readonlyLocator.waitFor({ state: "visible" });
-      await readonlyLocator.click();
-      await page.getByRole("cell", { name: new RegExp(attr_1 + "$") }).click();
+      await assetsPage.getAttributeLocator(attr_1).click();
+      await assetsPage.getConfigurationItemLocator(attr_1, "Read only").click();
       // Then Check on readonly of "<attribute_2>"
-      await page.getByRole("cell", { name: new RegExp(attr_2 + "$") }).click();
-      await readonlyLocator.waitFor({ state: "visible" });
-      await readonlyLocator.click();
-      await page.getByRole("cell", { name: new RegExp(attr_2 + "$") }).click();
+      await assetsPage.getAttributeLocator(attr_2).click();
+      await assetsPage.getConfigurationItemLocator(attr_2, "Read only").click();
       // Then Save
       const isSaveBtnVisible = await page.isVisible('button:has-text("Save")');
       if (isSaveBtnVisible) {
