@@ -1,19 +1,19 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
-import { preparedAssetsWithLocation } from "./fixtures/data/assets.js";
+import { preparedAssetsWithLocation as assets } from "./fixtures/data/assets.js";
 import { users } from "./fixtures/data/users.js";
 
 test.beforeEach(async ({ manager, browserName }) => {
   test.skip(browserName === "firefox", "firefox headless mode does not support webgl required by maplibre");
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-  await manager.setup("smartcity", users.smartcity, preparedAssetsWithLocation);
+  await manager.setup("smartcity", { user: users.smartcity, assets });
   // When Login to OpenRemote "smartcity" realm as "smartcity"
   await manager.goToRealmStartPage("smartcity");
   await manager.login("smartcity");
 });
 
 test("Check markers on map", async ({ page }) => {
-  const asset = preparedAssetsWithLocation[0].name;
+  const asset = assets[0].name;
   // Then Navigate to "map" tab
   // When Check "Battery" on map
   await page.waitForTimeout(1000);
@@ -31,4 +31,8 @@ test("Check markers on map", async ({ page }) => {
   await page.waitForTimeout(1500);
   const assetPage = page.locator(`#asset-header >> text=${asset}`);
   await expect(assetPage).toBeVisible();
+});
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
 });

@@ -18,3 +18,7 @@ test("Add new Realm", async ({ page, realmsPage }) => {
   // Then We see the smartcity realm
   await expect(page.locator("#desktop-right #realm-picker")).toContainText("smartcity");
 });
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
+});

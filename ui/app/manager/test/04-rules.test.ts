@@ -1,11 +1,11 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
-import { preparedAssets } from "./fixtures/data/assets.js";
+import { preparedAssetsForRules as assets } from "./fixtures/data/assets.js";
 import { users } from "./fixtures/data/users.js";
 
 test.beforeEach(async ({ manager }) => {
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-  await manager.setup("smartcity", users.smartcity, preparedAssets);
+  await manager.setup("smartcity", { user: users.smartcity, assets });
   // When Login to OpenRemote "smartcity" realm as "smartcity"
   await manager.goToRealmStartPage("smartcity");
   await manager.login("smartcity");
@@ -153,4 +153,8 @@ test.skip("Create a Flow rule", async ({ page, manager }) => {
   await expect(page.locator(`text=${name}FLOW`)).toHaveCount(1);
   // We should see {int} rules in total
   // await expect(page.locator(".node-container")).toHaveCount(int);
+});
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
 });

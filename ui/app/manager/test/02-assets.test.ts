@@ -23,7 +23,7 @@ assets.forEach(
   }) => {
     test(`Add new asset: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" is setup
-      await manager.setup("smartcity", users.smartcity);
+      await manager.setup("smartcity", { user: users.smartcity });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
@@ -68,7 +68,7 @@ assets.forEach(
     });
     test(`Search and select asset: ${name}`, async ({ page, manager }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-      await manager.setup("smartcity", users.smartcity, preparedAssets);
+      await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssets });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
@@ -83,7 +83,7 @@ assets.forEach(
     });
     test(`Update asset: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-      await manager.setup("smartcity", users.smartcity, preparedAssets);
+      await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssets });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
@@ -112,7 +112,7 @@ assets.forEach(
     });
     test.skip(`Set and cancel read-only for asset: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-      await manager.setup("smartcity", users.smartcity, preparedAssets);
+      await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssets });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
@@ -149,7 +149,7 @@ assets.forEach(
     });
     test(`Set assets' configuration item for Insights and Rules: ${name}`, async ({ page, manager, assetsPage }) => {
       // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-      await manager.setup("smartcity", users.smartcity, preparedAssets);
+      await manager.setup("smartcity", { user: users.smartcity, assets: preparedAssets });
       // When Login to OpenRemote "smartcity" realm as "smartcity"
       await manager.goToRealmStartPage("smartcity");
       await manager.login("smartcity");
@@ -171,3 +171,7 @@ assets.forEach(
     });
   }
 );
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
+});

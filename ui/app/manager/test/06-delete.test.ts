@@ -1,11 +1,12 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures/manager.js";
 import { users } from "./fixtures/data/users.js";
-import { preparedAssets } from "./fixtures/data/assets.js";
+import { preparedAssets as assets } from "./fixtures/data/assets.js";
+import { custom } from "./fixtures/data/roles.js";
 
 test.beforeEach(async ({ manager }) => {
   // Given the Realm "smartcity" with the user "smartcity" and assets is setup
-  await manager.setup("smartcity", users.smartcity, preparedAssets);
+  await manager.setup("smartcity", { user: users.smartcity, role: custom, assets });
   // When Login to OpenRemote "master" realm as "admin"
   await manager.goToRealmStartPage("master");
   await manager.login("admin");
@@ -61,9 +62,13 @@ test("Delete realm", async ({ page, manager, realmsPage }) => {
   await manager.navigateToMenuItem("Realms");
   // Then Delete realm
   await realmsPage.deleteRealm("smartcity");
+  await page.waitForTimeout(500);
   // Then We should not see the Realm picker
   await manager.goToRealmStartPage("master");
   // must wait for the realm picker to be rendered
-  await page.waitForTimeout(500);
   await expect(page.locator("#desktop-right #realm-picker")).not.toBeVisible();
+});
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
 });

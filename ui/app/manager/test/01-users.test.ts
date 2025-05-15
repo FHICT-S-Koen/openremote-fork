@@ -74,3 +74,7 @@ test("Add new user", async ({ page, manager, usersPage }) => {
   await page.waitForTimeout(200);
   await page.keyboard.press("Enter");
 });
+
+test.afterEach(async ({ manager }) => {
+  await manager.cleanUp();
+});

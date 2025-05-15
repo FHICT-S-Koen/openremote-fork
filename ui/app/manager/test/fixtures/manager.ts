@@ -4,26 +4,25 @@ import { users, Usernames } from "./data/users";
 const { admin, smartcity } = users;
 
 import { UserModel } from "../../src/pages/page-users";
-import { Asset } from "@openremote/model";
+import { Asset, Role } from "@openremote/model";
 import { BasePage } from "./index";
 import assets from "./data/assets";
 
 class Manager {
   private readonly clientId = "openremote";
   private readonly managerHost: String;
-  private readonly rest: RestApi;
   readonly axios: RestApi["_axiosInstance"];
 
   public realm?: string;
   public user?: UserModel;
+  public role?: Role;
   public assets?: Asset[];
 
   constructor(readonly page: Page, readonly baseURL: string) {
     // TODO: parameterize
     this.managerHost = "http://localhost:8080";
-    this.rest = rest;
-    this.rest.initialise(`${this.managerHost}/api/master/`);
-    this.axios = this.rest.axiosInstance;
+    rest.initialise(`${this.managerHost}/api/master/`);
+    this.axios = rest.axiosInstance;
   }
 
   async goToRealmStartPage(realm: string) {
@@ -115,71 +114,100 @@ class Manager {
    * setup the testing environment by giving the realm name and additional parameters
    * @param realm Realm to create
    * @param user Realm user to create
+   * @param user Role to create
    * @param user Assets to create
    */
-  async setup(realm: string, user?: UserModel, assets?: Asset[]) {
+  async setup(realm: string, { user, role, assets }: { user?: UserModel; role?: Role; assets?: Asset[] } = {}) {
     const access_token = await this.getAccessToken("master", admin.username, admin.password);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
-    // Add realm
-    await rest.api.RealmResource.create(
-      {
-        // TODO: use a normalize function
-        name: realm.toLowerCase(),
-        displayName: realm,
-        enabled: true,
-      },
-      config
-    )
-      .then((response) => {
-        expect(response.status).toBe(204);
-        this.realm = realm;
-      })
-      .catch((e) => {
-        expect(e.response.status, { message: "Failed to create realm" }).toBe(409);
-      });
 
-    if (!user) return;
+    // Add realm
+    try {
+      const response = await rest.api.RealmResource.create(
+        // TODO: use a normalize function
+        { name: realm.toLowerCase(), displayName: realm, enabled: true },
+        config
+      );
+      expect(response.status).toBe(204);
+      this.realm = realm;
+    } catch (e) {
+      console.error("Failed to create realm", e.response.status);
+    }
+
+    // Add role
+    if (role) {
+      let roles: Role[] = [];
+      try {
+        const response = await rest.api.UserResource.getClientRoles(realm, this.clientId, config);
+        expect(response.status).toBe(200);
+        roles = response.data;
+        if (role.compositeRoleIds) {
+          role.compositeRoleIds = role.compositeRoleIds
+            .map((name) => roles.find((r) => r.name === name)?.id)
+            .filter(Boolean) as string[];
+        }
+        roles.push(role);
+        try {
+          const response = await rest.api.UserResource.updateRoles(realm, roles, config);
+          expect(response.status).toBe(204);
+          this.role = role;
+        } catch (e) {
+          console.error("Failed to create role", e.response.status);
+        }
+      } catch (e) {
+        console.error("Failed to get roles", e.response.status);
+      }
+    }
 
     // Add user
-    await rest.api.UserResource.create(realm, user, config)
-      .then((response) => {
+    if (user) {
+      try {
+        const response = await rest.api.UserResource.create(realm, user, config);
         expect(response.status).toBe(200);
         this.user = response.data;
-      })
-      .then(async () => {
-        await rest.api.UserResource.updateUserClientRoles(
-          realm,
-          this.user!.id!,
-          this.clientId,
-          user.roles!,
-          config
-        ).then((response) => {
-          console.log("SAVED", user.roles);
+        // Add users' roles
+        try {
+          const response = await rest.api.UserResource.updateUserClientRoles(
+            realm,
+            this.user!.id!,
+            this.clientId,
+            user.roles!,
+            config
+          );
           expect(response.status).toBe(204);
-        });
-        await rest.api.UserResource.resetPassword(realm, this.user!.id!, { value: smartcity.password }, config).then(
-          (response) => {
+          // Reset users' password
+          try {
+            const response = await rest.api.UserResource.resetPassword(
+              realm,
+              this.user!.id!,
+              { value: smartcity.password },
+              config
+            );
             expect(response.status).toBe(204);
+          } catch (e) {
+            console.error("Failed to reset user password", e.response.status);
           }
-        );
-      })
-      .catch((e) => {
-        expect(e.response.status, { message: "Failed to create user" }).toBe(403);
-      });
+        } catch (e) {
+          console.error("Failed to update users' roles", e.response.status);
+        }
+      } catch (e) {
+        console.error("Failed to create user", e.response.status);
+      }
+    }
 
-    if (!assets) return;
-
-    // Add assets
-    this.assets = [];
-    for (const asset of assets) {
-      await rest.api.AssetResource.create(asset, config)
-        .then((response) => {
-          expect(response.status).toBe(200);
-          this.assets!.push(response.data);
-        })
-        .catch((e) => {
-          expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
-        });
+    if (assets) {
+      // Add assets
+      this.assets = [];
+      for (const asset of assets) {
+        await rest.api.AssetResource.create(asset, config)
+          .then((response) => {
+            expect(response.status).toBe(200);
+            this.assets!.push(response.data);
+          })
+          .catch((e) => {
+            expect(e.response.status, { message: "Failed to create asset" }).toBe(409);
+          });
+      }
     }
   }
 
@@ -187,36 +215,59 @@ class Manager {
    *  Clean up the environment
    */
   async cleanUp() {
-    console.log("cleanup", this.realm, this.user, this.assets);
+    console.info("cleanup", this.realm, this.user, this.assets);
 
     const access_token = await this.getAccessToken("master", "admin", users.admin.password!);
     const config = { headers: { Authorization: `Bearer ${access_token}` } };
 
+    let realm;
     if (this.realm) {
-      await rest.api.RealmResource.delete(this.realm, config)
-        .then((response) => {
-          expect(response.status).toBe(204);
-        })
-        .catch(() => null);
-      delete this.realm;
+      realm = this.realm;
+      try {
+        const response = await rest.api.RealmResource.delete(this.realm, config);
+        expect(response.status).toBe(204);
+        delete this.realm;
+      } catch (e) {
+        console.warn("Could not delete realm: ", this.realm);
+      }
     }
 
     if (this.user) {
-      await rest.api.UserResource.delete(this.user.realm!, this.user.id!, config)
-        .then((response) => {
+      try {
+        const response = await rest.api.UserResource.delete(this.user.realm!, this.user.id!, config);
+        expect(response.status).toBe(204);
+        delete this.user;
+      } catch (e) {
+        console.warn("Could not delete user: ", this.user);
+      }
+    }
+
+    if (this.role && realm) {
+      let roles;
+      try {
+        const response = await rest.api.UserResource.getClientRoles(realm, this.clientId, config);
+        roles = response.data.filter((r) => r.id === this.role!.id);
+        try {
+          const response = await rest.api.UserResource.updateRoles(realm, roles, config);
           expect(response.status).toBe(204);
-        })
-        .catch(() => null);
-      delete this.user;
+          delete this.role;
+        } catch (e) {
+          console.warn("Could not update roles: ", this.role);
+        }
+      } catch (e) {
+        console.warn("Could not get roles: ", this.user);
+      }
     }
 
     if (this.assets) {
-      await rest.api.AssetResource.delete({ assetId: this.assets.map(({ id }) => id!) })
-        .then((response) => {
-          expect(response.status).toBe(204);
-        })
-        .catch(() => null);
-      delete this.assets;
+      const assetIds = this.assets.map(({ id }) => id!);
+      try {
+        const response = await rest.api.AssetResource.delete({ assetId: assetIds }, config);
+        expect(response.status).toBe(204);
+        delete this.assets;
+      } catch (e) {
+        console.warn("Could not delete asset(s): ", assetIds);
+      }
     }
   }
 
@@ -287,7 +338,7 @@ class AssetsPage extends BasePage {
   async addAssets(update: boolean, configOrLoction) {
     await this.page.waitForTimeout(500);
 
-    // Goes to asset this.page
+    // Goes to assets page
     await this.page.click("#desktop-left a:nth-child(2)");
 
     // select conosle first to enter into the modify mode
@@ -541,6 +592,10 @@ class RolesPage extends BasePage {
   constructor(readonly page: Page, private readonly manager: Manager) {
     super(page);
   }
+
+  async goto() {
+    this.manager.navigateToMenuItem("Roles");
+  }
 }
 
 class RulesPage extends BasePage {
@@ -581,6 +636,12 @@ class UsersPage extends BasePage {
     await this.page.click('li[role="menuitem"]:has-text("Read")');
     await this.page.click('li[role="menuitem"]:has-text("Write")');
     await this.page.click('div[role="button"]:has-text("Manager Roles")');
+    // await this.page.route(`user/${this.manager.realm}/users`, async (route, request) => {
+    //   const response = await request.response()
+    //   console.log(response)
+    //   // Set realm so it will be cleaned up
+    //   this.manager.user = await response?.json();
+    // }, { times: 1 });
     // create user
     await this.page.click('button:has-text("create")');
   }
@@ -612,8 +673,4 @@ export const test = base.extend<Fixtures>({
   rolesPage: withManager(RolesPage),
   rulesPage: withManager(RulesPage),
   usersPage: withManager(UsersPage),
-});
-
-test.afterEach(async ({ manager }) => {
-  await manager.cleanUp();
 });
