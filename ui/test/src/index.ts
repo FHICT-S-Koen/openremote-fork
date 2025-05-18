@@ -1,47 +1,23 @@
-import { type Page } from "@playwright/test";
+import path from "node:path";
+import { FullConfig, defineConfig as originalDefineConfig, PlaywrightTestConfig } from "@playwright/test";
+import { test, expect, devices } from "@playwright/experimental-ct-core";
+import { createPlugin } from "./plugin";
 
-export class BasePage {
-  constructor(public readonly page: Page) {}
+export { BasePage } from "./fixtures/page";
 
-  /**
-   * drag to position x and position y
-   * @param x coordinate of screen pixel
-   * @param y coordinate of screen pixel
-   */
-  async drag(x: number, y: number) {
-    await this.page.mouse.down();
-    await this.page.mouse.move(x, y);
-    await this.page.mouse.up();
-  }
-
-  /**
-   * Intercept a request and handle it
-   * @param url
-   */
-  async interceptRequest<T>(url: string, cb: (response?: T) => void) {
-    await this.page.route(
-      url,
-      async (route, request) => {
-        await route.continue();
-        cb(await request.postDataJSON());
-      },
-      { times: 1 }
-    );
-  }
-
-  /**
-   * Intercept the response of a request and handle it
-   * @param url
-   */
-  async interceptResponse<T>(url: string, cb: (response?: T) => void) {
-    await this.page.route(
-      url,
-      async (route, request) => {
-        await route.continue();
-        const response = await request.response();
-        cb(await response?.json());
-      },
-      { times: 1 }
-    );
-  }
+function defineConfig(...configs: PlaywrightTestConfig[]) {
+  const original = originalDefineConfig(...configs);
+  return {
+    ...original,
+    "@playwright/test": {
+      ...original["@playwright/test"],
+      plugins: [() => createPlugin()],
+      babelPlugins: [[require.resolve("./plugin/transform")]],
+    },
+    "@playwright/experimental-ct-core": {
+      registerSourceFile: path.join(__dirname, "plugin/registerSource.mjs"),
+    },
+  };
 }
+
+export { test, expect, devices, defineConfig };

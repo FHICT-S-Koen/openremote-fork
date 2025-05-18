@@ -7,7 +7,10 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./*": "./src/*.ts"
+    "./*.ts": "./src/*.ts",
+    "./*.js": "./src/*.js",
+    "./*.mjs": "./src/*.mjs",
+    "./*.cjs": "./src/*.cjs"
   },
   "typesVersions": {
     "*": {
@@ -24,8 +27,34 @@
   },
   "license": "AGPL-3.0-or-later",
   "devDependencies": {
+    "@babel/core": "^7.16.0",
+    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
+    "@babel/plugin-syntax-object-rest-spread": "^7.8.3",
+    "@babel/plugin-transform-regenerator": "^7.16.0",
+    "@babel/plugin-transform-runtime": "^7.16.4",
+    "@babel/preset-env": "^7.16.4",
+    "@babel/runtime": "^7.16.3",
     "@openremote/rest": "workspace:*",
     "@openremote/util": "workspace:*",
-    "@playwright/test": "1.52.0"
+    "@playwright/experimental-ct-core": "1.52.0",
+    "@playwright/test": "1.52.0",
+    "@sand4rt/experimental-ct-web": "1.52.0",
+    "babel-loader": "^8.2.3",
+    "copy-webpack-plugin": "^10.0.0",
+    "css-loader": "^6.5.1",
+    "fast-async": "^6.3.8",
+    "file-loader": "^6.2.0",
+    "fork-ts-checker-notifier-webpack-plugin": "^9.0.0",
+    "fork-ts-checker-webpack-plugin": "^9.0.2",
+    "html-webpack-plugin": "^5.5.0",
+    "playwright": "1.52.0",
+    "playwright-core": "1.52.0",
+    "source-map-loader": "^3.0.0",
+    "style-loader": "^3.3.1",
+    "ts-loader": "^9.2.6",
+    "typescript": "^5.3.3",
+    "webpack": "^5.90.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
   }
 }

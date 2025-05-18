@@ -20,7 +20,9 @@
     "lit": "^2.0.2"
   },
   "devDependencies": {
-    "@openremote/util": "workspace:*"
+    "@openremote/test": "workspace:*",
+    "@openremote/util": "workspace:*",
+    "@playwright/test": "1.52.0"
   },
   "publishConfig": {
     "access": "public"
