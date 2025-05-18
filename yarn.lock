@@ -2838,7 +2838,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@openremote/or-translate@workspace:ui/component/or-translate"
   dependencies:
+    "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
+    "@playwright/test": "npm:1.52.0"
     i18next: "npm:^21.5.3"
     lit: "npm:^2.0.2"
   languageName: unknown
