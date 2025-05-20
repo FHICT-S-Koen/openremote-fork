@@ -4,7 +4,7 @@ import fs from "fs";
 import path from "path";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
-
+import HtmlWebpackPlugin from "html-webpack-plugin";
 import { removeDirAndLogToConsole } from "playwright/lib/util";
 import { debug } from "playwright-core/lib/utilsBundle";
 import { getPlaywrightVersion } from "playwright-core/lib/utils";
@@ -17,7 +17,7 @@ import {
   populateComponentsFromTests,
   hasJSComponents,
   ImportInfo,
-} from "./webpackUtils";
+} from "./plugin/webpackUtils";
 
 import type { TestRunnerPlugin } from "playwright/lib/plugins";
 import type { FullConfig, Suite } from "playwright/types/testReporter";
@@ -44,6 +44,7 @@ export function createPlugin(): TestRunnerPlugin {
       if (!result) return;
 
       const { webpackConfig } = result;
+      console.log(webpackConfig);
       devServer = new WebpackDevServer(webpackConfig.devServer, webpack(webpackConfig));
       await devServer.start();
 
@@ -93,12 +94,21 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
     console.log(`Template file playwright/index.html is missing.`);
     return null;
   }
+  console.log("DIRS", dirs);
 
   const componentRegistry: Map<string, ImportInfo> = new Map();
-  await populateComponentsFromTests(componentRegistry);
+  const componentsByImportingFile = new Map<string, string[]>();
+  await populateComponentsFromTests(componentRegistry, componentsByImportingFile);
 
   const registerSource = fs.readFileSync(registerSourceFile, "utf-8");
   const jsxInJS = hasJSComponents([...componentRegistry.values()]);
+
+  console.log("DIRS", componentsByImportingFile);
+  
+  
+  console.log("Component Registry", componentRegistry);
+  // console.log("Register Source", registerSource);
+  // console.log("Register Playwright Source", registerSourcePlaywright);
 
   const webpackConfig = {
     mode: "development",
@@ -128,26 +138,23 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
           },
           exclude: /node_modules/,
         },
-        {
-          test: /index\.js$/,
-          use: {
-            loader: path.resolve(__dirname, "./inject-register-loader.js"),
-            options: {
-              registerSource,
-            },
-          },
-        },
       ],
     },
     plugins: [
       new webpack.DefinePlugin({
+        __REGISTER_SOURCE__: JSON.stringify(registerSource),
         __COMPONENTS__: JSON.stringify([...componentRegistry.values()]),
+      }),
+      new HtmlWebpackPlugin({
+        template: path.join(dirs.templateDir, "index.html"),
+        inject: "body", // ensures <script> is added before </body>
       }),
     ],
     resolve: {
       extensions: [".js", ".jsx", ".ts", ".tsx"],
     },
   };
+  console.log("config", webpackConfig);
 
   return { webpackConfig };
 }

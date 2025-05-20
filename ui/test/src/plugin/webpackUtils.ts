@@ -131,6 +131,7 @@ export async function populateComponentsFromTests(
   componentsByImportingFile?: Map<string, string[]>
 ) {
   const importInfos: Map<string, ImportInfo[]> = await getUserData("playwright-ct-core");
+  console.log("importInfos ", importInfos)
   for (const [file, importList] of importInfos) {
     for (const importInfo of importList) {
       componentRegistry.set(importInfo.id, importInfo);

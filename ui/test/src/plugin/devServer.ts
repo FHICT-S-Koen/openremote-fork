@@ -13,7 +13,7 @@ import {
   resolveDirs,
   transformIndexFile,
   ComponentRegistry,
-} from "./webpackUtils"; // you'll adapt your viteUtils for Webpack
+} from "./webpackUtils";
 
 import type { FullConfig } from "playwright/test";
 
@@ -60,6 +60,7 @@ export async function runDevServer(config: FullConfig): Promise<() => Promise<vo
     },
   });
 
+  console.log(webpackConfig);
   const compiler = webpack(webpackConfig);
 
   const devServer = new WebpackDevServer(

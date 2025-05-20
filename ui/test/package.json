@@ -7,7 +7,10 @@
   "private": true,
   "exports": {
     ".": "./src/index.ts",
-    "./*": "./src/*.ts"
+    "./*.ts": "./src/*.ts",
+    "./*.js": "./src/*.js",
+    "./*.mjs": "./src/*.mjs",
+    "./*.cjs": "./src/*.cjs"
   },
   "typesVersions": {
     "*": {
@@ -35,6 +38,7 @@
     "@openremote/util": "workspace:*",
     "@playwright/experimental-ct-core": "1.52.0",
     "@playwright/test": "1.52.0",
+    "@sand4rt/experimental-ct-web": "1.52.0",
     "babel-loader": "^8.2.3",
     "copy-webpack-plugin": "^10.0.0",
     "css-loader": "^6.5.1",
