@@ -1,4 +1,4 @@
-import fs from "fs";
+import fs, { writeFileSync } from "fs";
 import path from "path";
 
 import { getUserData } from "playwright/lib/transform/compilationCache";
@@ -131,7 +131,7 @@ export async function populateComponentsFromTests(
   componentsByImportingFile?: Map<string, string[]>
 ) {
   const importInfos: Map<string, ImportInfo[]> = await getUserData("playwright-ct-core");
-  console.log("importInfos ", importInfos)
+  console.log("importInfos ", importInfos);
   for (const [file, importList] of importInfos) {
     for (const importInfo of importList) {
       componentRegistry.set(importInfo.id, importInfo);
@@ -156,9 +156,6 @@ export function hasJSComponents(components: ImportInfo[]): boolean {
   return false;
 }
 
-const importReactRE = /(^|\n|;)import\s+(\*\s+as\s+)?React(,|\s+)/;
-const compiledReactRE = /(const|var)\s+React\s*=/;
-
 export function transformIndexFile(
   id: string,
   content: string,
@@ -166,20 +163,22 @@ export function transformIndexFile(
   registerSource: string,
   importInfos: Map<string, ImportInfo>
 ): { code: string; map: { mappings: string } } | null {
-  if (
-    id.endsWith(".js") &&
-    content.includes("React.createElement") &&
-    !content.match(importReactRE) &&
-    !content.match(compiledReactRE)
-  ) {
-    const code = `import React from 'react';\n${content}`;
-    return { code, map: { mappings: "" } };
-  }
+  // const validFiles = ["index.ts", "index.tsx", "index.js", "index.jsx"].map((f) => path.join(templateDir, f));
+  // if (!validFiles.some((f) => path.resolve(id).endsWith(f))) {
+  //   return null;
+  // }
+  // 
+  const indexTs = path.join(templateDir, 'index.ts');
+  const indexTsx = path.join(templateDir, 'index.tsx');
+  const indexJs = path.join(templateDir, 'index.js');
+  const indexJsx = path.join(templateDir, 'index.jsx');
+  const idResolved = path.resolve(id);
 
-  const validFiles = ["index.ts", "index.tsx", "index.js", "index.jsx"].map((f) => path.join(templateDir, f));
-  if (!validFiles.some((f) => path.resolve(id).endsWith(f))) {
-    return null;
-  }
+  // IT resolves "/home/koen/develop/openremote/ui/component/or-translate/index.js"
+  // But it should "/home/koen/develop/openremote/ui/component/or-translate/playwright/index.js"
+
+  // if (!idResolved.endsWith(indexTs) && !idResolved.endsWith(indexTsx) && !idResolved.endsWith(indexJs) && !idResolved.endsWith(indexJsx))
+  //   return null;
 
   const lines = [content, "", registerSource];
 
@@ -194,6 +193,7 @@ export function transformIndexFile(
 
   lines.push(`__pwRegistry.initialize({ ${[...importInfos.keys()].join(",\n  ")} });`);
 
+  console.trace("lines", lines);
   return {
     code: lines.join("\n"),
     map: { mappings: "" },

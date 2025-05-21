@@ -60,7 +60,7 @@ export async function runDevServer(config: FullConfig): Promise<() => Promise<vo
     },
   });
 
-  console.log(webpackConfig);
+  console.trace("Startin dev server", webpackConfig);
   const compiler = webpack(webpackConfig);
 
   const devServer = new WebpackDevServer(

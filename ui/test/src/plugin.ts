@@ -1,10 +1,11 @@
 // playwright-webpack-plugin.js
 
-import fs from "fs";
+import fs, { writeFileSync } from "fs";
 import path from "path";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
+import VirtualModulesPlugin from "webpack-virtual-modules";
 import { removeDirAndLogToConsole } from "playwright/lib/util";
 import { debug } from "playwright-core/lib/utilsBundle";
 import { getPlaywrightVersion } from "playwright-core/lib/utils";
@@ -17,6 +18,7 @@ import {
   populateComponentsFromTests,
   hasJSComponents,
   ImportInfo,
+  transformIndexFile,
 } from "./plugin/webpackUtils";
 
 import type { TestRunnerPlugin } from "playwright/lib/plugins";
@@ -104,15 +106,23 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
   const jsxInJS = hasJSComponents([...componentRegistry.values()]);
 
   console.log("DIRS", componentsByImportingFile);
-  
-  
   console.log("Component Registry", componentRegistry);
-  // console.log("Register Source", registerSource);
-  // console.log("Register Playwright Source", registerSourcePlaywright);
+
+  const indexSourcePath = path.join(dirs.templateDir, "index.js");
+  const transformedIndex = transformIndexFile(
+    indexSourcePath,
+    fs.readFileSync(indexSourcePath, "utf-8"),
+    dirs.templateDir,
+    registerSource,
+    componentRegistry
+  );
+
+  const outputIndexPath = path.join(dirs.outDir, "virtual-index.js");
+  fs.writeFileSync(outputIndexPath, transformedIndex?.code);
 
   const webpackConfig = {
     mode: "development",
-    entry: path.join(dirs.templateDir, "index.js"),
+    entry: outputIndexPath,
     output: {
       path: dirs.outDir,
       filename: "bundle.js",
@@ -146,15 +156,27 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
         __COMPONENTS__: JSON.stringify([...componentRegistry.values()]),
       }),
       new HtmlWebpackPlugin({
-        template: path.join(dirs.templateDir, "index.html"),
-        inject: "body", // ensures <script> is added before </body>
+        inject: "body",
+        scriptLoading: "module",
       }),
+      // new HtmlWebpackPlugin({
+      //   template: path.join(dirs.templateDir, "index.html"),
+      //   inject: "body", // ensures <script> is added before </body>
+      // }),
+      // new HtmlWebpackPlugin({
+      //   template: path.join(dirs.templateDir, "index.html"),
+      //   inject: "body",
+      //   scriptLoading: "module",
+      //   templateParameters: {
+      //     registerSource,
+      //   },
+      // }),
     ],
     resolve: {
       extensions: [".js", ".jsx", ".ts", ".tsx"],
     },
   };
-  console.log("config", webpackConfig);
+  // console.log("config", webpackConfig);
 
   return { webpackConfig };
 }
