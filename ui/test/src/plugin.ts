@@ -21,6 +21,39 @@ import {
   transformIndexFile,
 } from "./plugin/webpackUtils";
 
+function getStandardModuleRules() {
+  return {
+    rules: [
+      {
+        test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
+        type: "asset/source",
+      },
+      {
+        test: /\.css$/, //
+        exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
+        use: [{ loader: "css-loader" }],
+      },
+      {
+        test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
+        type: "asset",
+        generator: {
+          filename: "images/[hash][ext][query]",
+        },
+      },
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            projectReferences: true,
+          },
+        },
+      },
+    ],
+  };
+}
+
 import type { TestRunnerPlugin } from "playwright/lib/plugins";
 import type { FullConfig, Suite } from "playwright/types/testReporter";
 
@@ -137,18 +170,19 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
       https: !!endpoint.https,
     },
     module: {
-      rules: [
-        {
-          test: jsxInJS ? /\.jsx?$/ : /\.tsx?$/,
-          use: {
-            loader: "babel-loader",
-            options: {
-              presets: ["@babel/preset-react", "@babel/preset-env"],
-            },
-          },
-          exclude: /node_modules/,
-        },
-      ],
+      ...getStandardModuleRules(),
+      // rules: [
+      //   {
+      //     test: jsxInJS ? /\.jsx?$/ : /\.tsx?$/,
+      //     use: {
+      //       loader: "babel-loader",
+      //       options: {
+      //         presets: ["@babel/preset-react", "@babel/preset-env"],
+      //       },
+      //     },
+      //     exclude: /node_modules/,
+      //   },
+      // ],
     },
     plugins: [
       new webpack.DefinePlugin({

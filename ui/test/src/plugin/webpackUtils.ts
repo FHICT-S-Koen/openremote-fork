@@ -59,6 +59,39 @@ export function resolveEndpoint(config: FullConfig) {
   };
 }
 
+function getStandardModuleRules() {
+  return {
+    rules: [
+      {
+        test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
+        type: "asset/source",
+      },
+      {
+        test: /\.css$/, //
+        exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
+        use: [{ loader: "css-loader" }],
+      },
+      {
+        test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
+        type: "asset",
+        generator: {
+          filename: "images/[hash][ext][query]",
+        },
+      },
+      {
+        test: /\.tsx?$/,
+        exclude: /node_modules/,
+        use: {
+          loader: "ts-loader",
+          options: {
+            projectReferences: true,
+          },
+        },
+      },
+    ],
+  };
+}
+
 export async function createWebpackConfig(
   dirs: ComponentDirs,
   config: FullConfig,
@@ -82,23 +115,24 @@ export async function createWebpackConfig(
       extensions: [".js", ".jsx", ".ts", ".tsx"],
     },
     module: {
-      rules: [
-        {
-          test: /\.[jt]sx?$/,
-          exclude: /node_modules/,
-          use: {
-            loader: "babel-loader",
-            options: {
-              presets: ["@babel/preset-env", "@babel/preset-react", "@babel/preset-typescript"],
-              plugins: supportJsxInJs ? [["@babel/plugin-transform-react-jsx"]] : [],
-            },
-          },
-        },
-        {
-          test: /\.css$/,
-          use: ["style-loader", "css-loader"],
-        },
-      ],
+      ...getStandardModuleRules(),
+      // rules: [
+      //   {
+      //     test: /\.[jt]sx?$/,
+      //     exclude: /node_modules/,
+      //     use: {
+      //       loader: "babel-loader",
+      //       options: {
+      //         presets: ["@babel/preset-env", "@babel/preset-react", "@babel/preset-typescript"],
+      //         plugins: supportJsxInJs ? [["@babel/plugin-transform-react-jsx"]] : [],
+      //       },
+      //     },
+      //   },
+      //   {
+      //     test: /\.css$/,
+      //     use: ["style-loader", "css-loader"],
+      //   },
+      // ],
     },
     plugins: [],
     devServer: {
@@ -167,11 +201,11 @@ export function transformIndexFile(
   // if (!validFiles.some((f) => path.resolve(id).endsWith(f))) {
   //   return null;
   // }
-  // 
-  const indexTs = path.join(templateDir, 'index.ts');
-  const indexTsx = path.join(templateDir, 'index.tsx');
-  const indexJs = path.join(templateDir, 'index.js');
-  const indexJsx = path.join(templateDir, 'index.jsx');
+  //
+  const indexTs = path.join(templateDir, "index.ts");
+  const indexTsx = path.join(templateDir, "index.tsx");
+  const indexJs = path.join(templateDir, "index.js");
+  const indexJsx = path.join(templateDir, "index.jsx");
   const idResolved = path.resolve(id);
 
   // IT resolves "/home/koen/develop/openremote/ui/component/or-translate/index.js"

@@ -2916,7 +2916,9 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
+    "@playwright/test": "npm:1.52.0"
     lit: "npm:^2.0.2"
   languageName: unknown
   linkType: soft
