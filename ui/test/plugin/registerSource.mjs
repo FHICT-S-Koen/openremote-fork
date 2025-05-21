@@ -163,7 +163,6 @@ export function wrapObject(value, callbacks) {
 
 export async function unwrapObject(value) {
   return transformObjectAsync(value, async (v) => {
-    console.log("unwrapObject", v);
     if (isFunctionRef(v)) {
       const result = (...args) => {
         window.__ctDispatchFunction(v.ordinal, args);

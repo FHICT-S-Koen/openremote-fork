@@ -1,4 +1,7 @@
 dist/
 lib/
+
+# Playwright
+playwright/.cache/
 test/screenshots/
 test/storageState.json

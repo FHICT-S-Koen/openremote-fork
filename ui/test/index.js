@@ -1,11 +1,25 @@
-import path from "node:path";
-import { FullConfig, defineConfig as originalDefineConfig, PlaywrightTestConfig } from "@playwright/test";
+import { defineConfig as originalDefineConfig } from "@playwright/test";
+
 import { test, expect, devices } from "@playwright/experimental-ct-core";
 import { createPlugin } from "./plugin";
 
-export { BasePage } from "./fixtures/page";
+export const setupProjects = [
+  {
+    name: "setup",
+    testMatch: "**/*.setup.ts",
+    teardown: "cleanup",
+    worker: 1,
+  },
+  {
+    name: "cleanup",
+    testMatch: "**/*.cleanup.ts",
+    worker: 1,
+  },
+];
 
-function defineConfig(...configs: PlaywrightTestConfig[]) {
+export * from "./fixtures/page";
+
+function defineConfig(...configs) {
   const original = originalDefineConfig(...configs);
   return {
     ...original,
@@ -15,7 +29,7 @@ function defineConfig(...configs: PlaywrightTestConfig[]) {
       babelPlugins: [[require.resolve("./plugin/transform")]],
     },
     "@playwright/experimental-ct-core": {
-      registerSourceFile: path.join(__dirname, "plugin/registerSource.mjs"),
+      registerSourceFile: require.resolve("./plugin/registerSource"),
     },
   };
 }

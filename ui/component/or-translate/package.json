@@ -21,8 +21,7 @@
   },
   "devDependencies": {
     "@openremote/test": "workspace:*",
-    "@openremote/util": "workspace:*",
-    "@playwright/test": "1.52.0"
+    "@openremote/util": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

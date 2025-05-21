@@ -1,6 +1,6 @@
 // playwright-webpack-plugin.js
 
-import fs from "fs";
+import fs from "node:fs";
 import path from "path";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
@@ -15,10 +15,12 @@ import {
   resolveDirs,
   resolveEndpoint,
   populateComponentsFromTests,
-  hasJSComponents,
   ImportInfo,
   transformIndexFile,
-} from "./plugin/webpackUtils";
+} from "./webpackUtils";
+
+import type { TestRunnerPlugin } from "playwright/lib/plugins";
+import type { FullConfig } from "playwright/types/testReporter";
 
 function getStandardModuleRules() {
   return {
@@ -53,9 +55,6 @@ function getStandardModuleRules() {
   };
 }
 
-import type { TestRunnerPlugin } from "playwright/lib/plugins";
-import type { FullConfig, Suite } from "playwright/types/testReporter";
-
 const log = debug("pw:webpack");
 const playwrightVersion = getPlaywrightVersion();
 
@@ -78,7 +77,6 @@ export function createPlugin(): TestRunnerPlugin {
       if (!result) return;
 
       const { webpackConfig } = result;
-      console.log(webpackConfig);
       devServer = new WebpackDevServer(webpackConfig.devServer, webpack(webpackConfig));
       await devServer.start();
 
@@ -128,29 +126,22 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
     console.log(`Template file playwright/index.html is missing.`);
     return null;
   }
-  console.log("DIRS", dirs);
 
   const componentRegistry: Map<string, ImportInfo> = new Map();
   const componentsByImportingFile = new Map<string, string[]>();
   await populateComponentsFromTests(componentRegistry, componentsByImportingFile);
 
+  // TODO: Check properly invalidate cache before writing to cache dir
   const registerSource = fs.readFileSync(registerSourceFile, "utf-8");
-  const jsxInJS = hasJSComponents([...componentRegistry.values()]);
-
-  console.log("DIRS", componentsByImportingFile);
-  console.log("Component Registry", componentRegistry);
-
   const indexSourcePath = path.join(dirs.templateDir, "index.js");
   const transformedIndex = transformIndexFile(
-    indexSourcePath,
     fs.readFileSync(indexSourcePath, "utf-8"),
-    dirs.templateDir,
     registerSource,
     componentRegistry
   );
-
-  const outputIndexPath = path.join(dirs.outDir, "virtual-index.js");
-  fs.writeFileSync(outputIndexPath, transformedIndex?.code);
+  const outputIndexPath = path.join(dirs.outDir, "index.js");
+  fs.mkdirSync(dirs.outDir, { recursive: true });
+  fs.writeFileSync(outputIndexPath, transformedIndex);
 
   const webpackConfig = {
     mode: "development",
@@ -168,21 +159,7 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
       port: endpoint.port,
       https: !!endpoint.https,
     },
-    module: {
-      ...getStandardModuleRules(),
-      // rules: [
-      //   {
-      //     test: jsxInJS ? /\.jsx?$/ : /\.tsx?$/,
-      //     use: {
-      //       loader: "babel-loader",
-      //       options: {
-      //         presets: ["@babel/preset-react", "@babel/preset-env"],
-      //       },
-      //     },
-      //     exclude: /node_modules/,
-      //   },
-      // ],
-    },
+    module: getStandardModuleRules(),
     plugins: [
       new webpack.DefinePlugin({
         __REGISTER_SOURCE__: JSON.stringify(registerSource),
@@ -192,24 +169,11 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
         inject: "body",
         scriptLoading: "module",
       }),
-      // new HtmlWebpackPlugin({
-      //   template: path.join(dirs.templateDir, "index.html"),
-      //   inject: "body", // ensures <script> is added before </body>
-      // }),
-      // new HtmlWebpackPlugin({
-      //   template: path.join(dirs.templateDir, "index.html"),
-      //   inject: "body",
-      //   scriptLoading: "module",
-      //   templateParameters: {
-      //     registerSource,
-      //   },
-      // }),
     ],
     resolve: {
       extensions: [".js", ".jsx", ".ts", ".tsx"],
     },
   };
-  // console.log("config", webpackConfig);
 
   return { webpackConfig };
 }

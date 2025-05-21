@@ -64,7 +64,6 @@ local.properties
 # Playwright
 test-results
 playwright-report
-playwright/.cache
 
 # Nix (temp)
 .direnv

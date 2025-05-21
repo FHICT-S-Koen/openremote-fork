@@ -25,6 +25,7 @@
     "lit": "^2.0.2"
   },
   "devDependencies": {
+    "@openremote/test": "workspace:*",
     "@openremote/util": "workspace:*"
   },
   "publishConfig": {

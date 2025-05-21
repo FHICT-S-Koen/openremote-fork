@@ -44,13 +44,7 @@ export async function runDevServer(config: FullConfig): Promise<() => Promise<vo
       compiler.hooks.emit.tapAsync("TransformIndexPlugin", async (compilation, callback) => {
         const indexPath = path.join(dirs.templateDir, "index.html");
         const raw = await fs.promises.readFile(indexPath, "utf-8");
-        const transformed = await transformIndexFile(
-          indexPath,
-          raw,
-          dirs.templateDir,
-          registerSource,
-          componentRegistry
-        );
+        const transformed = await transformIndexFile(raw, registerSource, componentRegistry);
         compilation.assets["index.html"] = {
           source: () => transformed,
           size: () => transformed.length,
@@ -60,7 +54,6 @@ export async function runDevServer(config: FullConfig): Promise<() => Promise<vo
     },
   });
 
-  console.trace("Startin dev server", webpackConfig);
   const compiler = webpack(webpackConfig);
 
   const devServer = new WebpackDevServer(

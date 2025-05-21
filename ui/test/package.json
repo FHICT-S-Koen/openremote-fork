@@ -3,27 +3,21 @@
   "version": "1.3.3",
   "description": "Test Util",
   "author": "OpenRemote",
-  "module": "src/index.ts",
+  "module": "index.js",
   "private": true,
   "exports": {
-    ".": "./src/index.ts",
-    "./*.ts": "./src/*.ts",
-    "./*.js": "./src/*.js",
-    "./*.mjs": "./src/*.mjs",
-    "./*.cjs": "./src/*.cjs"
+    ".": "./index.js",
+    "./*.ts": "./*.ts",
+    "./*.js": "./*.js",
+    "./*.mjs": "./*.mjs",
+    "./*.cjs": "./*.cjs"
   },
   "typesVersions": {
     "*": {
       "*": [
-        "src/*"
+        "./*"
       ]
     }
-  },
-  "scripts": {
-    "build": "npx tsc -b",
-    "clean": "npx tsc -b --clean && npx shx rm -rf dist lib",
-    "test": "echo \"No tests\" && exit 0",
-    "prepack": "npx tsc -b"
   },
   "license": "AGPL-3.0-or-later",
   "devDependencies": {

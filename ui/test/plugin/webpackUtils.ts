@@ -1,5 +1,5 @@
-import fs, { writeFileSync } from "fs";
-import path from "path";
+import fs from "node:fs";
+import path from "node:path";
 
 import { getUserData } from "playwright/lib/transform/compilationCache";
 import { resolveHook } from "playwright/lib/transform/transform";
@@ -95,8 +95,7 @@ function getStandardModuleRules() {
 export async function createWebpackConfig(
   dirs: ComponentDirs,
   config: FullConfig,
-  frameworkPluginFactory?: () => Promise<webpack.WebpackPluginInstance>,
-  supportJsxInJs = false
+  frameworkPluginFactory?: () => Promise<webpack.WebpackPluginInstance>
 ): Promise<WebpackConfig> {
   const endpoint = resolveEndpoint(config);
   const use = config.projects[0].use as CtConfig;
@@ -114,26 +113,7 @@ export async function createWebpackConfig(
     resolve: {
       extensions: [".js", ".jsx", ".ts", ".tsx"],
     },
-    module: {
-      ...getStandardModuleRules(),
-      // rules: [
-      //   {
-      //     test: /\.[jt]sx?$/,
-      //     exclude: /node_modules/,
-      //     use: {
-      //       loader: "babel-loader",
-      //       options: {
-      //         presets: ["@babel/preset-env", "@babel/preset-react", "@babel/preset-typescript"],
-      //         plugins: supportJsxInJs ? [["@babel/plugin-transform-react-jsx"]] : [],
-      //       },
-      //     },
-      //   },
-      //   {
-      //     test: /\.css$/,
-      //     use: ["style-loader", "css-loader"],
-      //   },
-      // ],
-    },
+    module: getStandardModuleRules(),
     plugins: [],
     devServer: {
       host: endpoint.host,
@@ -165,7 +145,6 @@ export async function populateComponentsFromTests(
   componentsByImportingFile?: Map<string, string[]>
 ) {
   const importInfos: Map<string, ImportInfo[]> = await getUserData("playwright-ct-core");
-  console.log("importInfos ", importInfos);
   for (const [file, importList] of importInfos) {
     for (const importInfo of importList) {
       componentRegistry.set(importInfo.id, importInfo);
@@ -179,41 +158,11 @@ export async function populateComponentsFromTests(
   }
 }
 
-export function hasJSComponents(components: ImportInfo[]): boolean {
-  for (const component of components) {
-    const importPath = resolveHook(component.filename, component.importSource);
-    const extname = importPath ? path.extname(importPath) : "";
-    if (extname === ".js" || (importPath && !extname && fs.existsSync(importPath + ".js"))) {
-      return true;
-    }
-  }
-  return false;
-}
-
 export function transformIndexFile(
-  id: string,
   content: string,
-  templateDir: string,
   registerSource: string,
   importInfos: Map<string, ImportInfo>
-): { code: string; map: { mappings: string } } | null {
-  // const validFiles = ["index.ts", "index.tsx", "index.js", "index.jsx"].map((f) => path.join(templateDir, f));
-  // if (!validFiles.some((f) => path.resolve(id).endsWith(f))) {
-  //   return null;
-  // }
-  //
-  const indexTs = path.join(templateDir, "index.ts");
-  const indexTsx = path.join(templateDir, "index.tsx");
-  const indexJs = path.join(templateDir, "index.js");
-  const indexJsx = path.join(templateDir, "index.jsx");
-  const idResolved = path.resolve(id);
-
-  // IT resolves "/home/koen/develop/openremote/ui/component/or-translate/index.js"
-  // But it should "/home/koen/develop/openremote/ui/component/or-translate/playwright/index.js"
-
-  // if (!idResolved.endsWith(indexTs) && !idResolved.endsWith(indexTsx) && !idResolved.endsWith(indexJs) && !idResolved.endsWith(indexJsx))
-  //   return null;
-
+): string {
   const lines = [content, "", registerSource];
 
   for (const value of importInfos.values()) {
@@ -227,11 +176,7 @@ export function transformIndexFile(
 
   lines.push(`__pwRegistry.initialize({ ${[...importInfos.keys()].join(",\n  ")} });`);
 
-  console.trace("lines", lines);
-  return {
-    code: lines.join("\n"),
-    map: { mappings: "" },
-  };
+  return lines.join("\n");
 }
 
 export function frameworkConfig(config: FullConfig): {

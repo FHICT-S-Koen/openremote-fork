@@ -1,6 +1,11 @@
-// empty for now
-// wait for future development
+import { OrJSONForms } from "@openremote/or-json-forms";
 
-import { test } from "@playwright/test";
+import { test, expect } from "@openremote/test";
 
-test.fixme("test", async ({}) => {});
+test("or-json-forms", async ({ mount }) => {
+  const component = await mount(OrJSONForms, {
+    props: {},
+  });
+
+  await expect(component).toContainText("test");
+});

@@ -2847,6 +2847,7 @@ __metadata:
     "@jsonforms/core": "npm:^3.5.1"
     "@openremote/or-components": "workspace:*"
     "@openremote/or-mwc-components": "workspace:*"
+    "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
     "@polymer/polymer": "npm:^3.3.1"
     ajv: "npm:^8.8.2"
@@ -2916,6 +2917,7 @@ __metadata:
     "@openremote/core": "workspace:*"
     "@openremote/or-icon": "workspace:*"
     "@openremote/or-translate": "workspace:*"
+    "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
     lit: "npm:^2.0.2"
   languageName: unknown
@@ -3015,7 +3017,6 @@ __metadata:
   dependencies:
     "@openremote/test": "workspace:*"
     "@openremote/util": "workspace:*"
-    "@playwright/test": "npm:1.52.0"
     i18next: "npm:^21.5.3"
     lit: "npm:^2.0.2"
   languageName: unknown
