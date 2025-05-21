@@ -3,16 +3,11 @@ import path from "node:path";
 
 import { getUserData } from "playwright/lib/transform/compilationCache";
 import { resolveHook } from "playwright/lib/transform/transform";
-import { debug } from "playwright-core/lib/utilsBundle";
-
-// import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer";
 
 import type { PlaywrightTestConfig as BasePlaywrightTestConfig } from "playwright/types/test";
 import type { FullConfig } from "playwright/types/testReporter";
 import type webpack from "webpack";
 import type { Configuration as WebpackConfig } from "webpack";
-
-const log = debug("pw:webpack");
 
 export type CtConfig = BasePlaywrightTestConfig["use"] & {
   ctPort?: number;
@@ -56,87 +51,6 @@ export function resolveEndpoint(config: FullConfig) {
     https: baseURL.protocol.startsWith("https:"),
     host: baseURL.hostname,
     port: use.ctPort || Number(baseURL.port) || 3100,
-  };
-}
-
-function getStandardModuleRules() {
-  return {
-    rules: [
-      {
-        test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
-        type: "asset/source",
-      },
-      {
-        test: /\.css$/, //
-        exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
-        use: [{ loader: "css-loader" }],
-      },
-      {
-        test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
-        type: "asset",
-        generator: {
-          filename: "images/[hash][ext][query]",
-        },
-      },
-      {
-        test: /\.tsx?$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "ts-loader",
-          options: {
-            projectReferences: true,
-          },
-        },
-      },
-    ],
-  };
-}
-
-export async function createWebpackConfig(
-  dirs: ComponentDirs,
-  config: FullConfig,
-  frameworkPluginFactory?: () => Promise<webpack.WebpackPluginInstance>
-): Promise<WebpackConfig> {
-  const endpoint = resolveEndpoint(config);
-  const use = config.projects[0].use as CtConfig;
-
-  const baseConfig: WebpackConfig = {
-    mode: "development",
-    context: dirs.templateDir,
-    entry: path.join(dirs.templateDir, "index.js"),
-    output: {
-      path: dirs.outDir,
-      filename: "bundle.js",
-      publicPath: "/",
-    },
-    devtool: "source-map",
-    resolve: {
-      extensions: [".js", ".jsx", ".ts", ".tsx"],
-    },
-    module: getStandardModuleRules(),
-    plugins: [],
-    devServer: {
-      host: endpoint.host,
-      port: endpoint.port,
-      https: endpoint.https,
-      static: {
-        directory: dirs.templateDir,
-      },
-      hot: true,
-    },
-  };
-
-  const userConfig =
-    typeof use.ctWebpackConfig === "function" ? await use.ctWebpackConfig() : use.ctWebpackConfig || {};
-
-  if (frameworkPluginFactory) {
-    baseConfig.plugins!.push(await frameworkPluginFactory());
-  }
-
-  return {
-    ...baseConfig,
-    ...userConfig,
-    plugins: [...(baseConfig.plugins || []), ...(userConfig.plugins || [])],
   };
 }
 

@@ -5,10 +5,13 @@ import path from "path";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
+import { getStandardModuleRules } from "@openremote/util";
 import { removeDirAndLogToConsole } from "playwright/lib/util";
 import { debug } from "playwright-core/lib/utilsBundle";
 import { getPlaywrightVersion } from "playwright-core/lib/utils";
 import { isURLAvailable } from "playwright-core/lib/utils";
+import type { TestRunnerPlugin } from "playwright/lib/plugins";
+import type { FullConfig } from "playwright/types/testReporter";
 
 import {
   frameworkConfig,
@@ -18,42 +21,6 @@ import {
   ImportInfo,
   transformIndexFile,
 } from "./webpackUtils";
-
-import type { TestRunnerPlugin } from "playwright/lib/plugins";
-import type { FullConfig } from "playwright/types/testReporter";
-
-function getStandardModuleRules() {
-  return {
-    rules: [
-      {
-        test: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/, //output css as strings
-        type: "asset/source",
-      },
-      {
-        test: /\.css$/, //
-        exclude: /(maplibre|mapbox|@material|gridstack|@mdi).*\.css$/,
-        use: [{ loader: "css-loader" }],
-      },
-      {
-        test: /\.(png|jpg|ico|gif|svg|eot|ttf|woff|woff2|mp4)$/,
-        type: "asset",
-        generator: {
-          filename: "images/[hash][ext][query]",
-        },
-      },
-      {
-        test: /\.tsx?$/,
-        exclude: /node_modules/,
-        use: {
-          loader: "ts-loader",
-          options: {
-            projectReferences: true,
-          },
-        },
-      },
-    ],
-  };
-}
 
 const log = debug("pw:webpack");
 const playwrightVersion = getPlaywrightVersion();
@@ -67,7 +34,7 @@ export function createPlugin(): TestRunnerPlugin {
   return {
     name: "playwright-webpack-plugin",
 
-    setup: async (cfg, cfgDir) => {
+    setup: async (cfg: FullConfig, cfgDir: string) => {
       config = cfg;
       configDir = cfgDir;
     },
@@ -80,17 +47,17 @@ export function createPlugin(): TestRunnerPlugin {
       devServer = new WebpackDevServer(webpackConfig.devServer, webpack(webpackConfig));
       await devServer.start();
 
+      if (!devServer.server) return;
+
       const address = devServer.server.address();
-      if (typeof address === "object") {
+      if (address && typeof address === "object") {
         const protocol = webpackConfig.devServer.https ? "https:" : "http:";
         process.env.PLAYWRIGHT_TEST_BASE_URL = `${protocol}//${address.address}:${address.port}`;
       }
     },
 
     end: async () => {
-      setTimeout(async () => {
-        if (devServer) await devServer.stop();
-      }, 10000);
+      if (devServer) await devServer.stop();
     },
 
     populateDependencies: async () => {
