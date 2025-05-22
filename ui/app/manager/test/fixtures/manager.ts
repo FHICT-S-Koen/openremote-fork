@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import { test as base, type Page, type Locator, expect, type TestFixture } from "@playwright/test";
 import rest, { RestApi } from "@openremote/rest";
 import { users, Usernames } from "./data/users";
@@ -8,6 +10,9 @@ import { UserModel } from "../../src/pages/page-users";
 import { Asset, Role } from "@openremote/model";
 import { BasePage } from "@openremote/test";
 import permissions from "./data/permissions";
+
+export const adminStatePath = path.join(__dirname, "data/.auth/admin.json");
+export const userStatePath = path.join(__dirname, "data/.auth/user.json");
 
 class Manager {
   private readonly clientId = "openremote";
@@ -249,7 +254,7 @@ class Manager {
   }
 
   protected getAppUrl(realm: string) {
-    const appUrl = this.baseURL + "manager/?realm=";
+    const appUrl = this.baseURL + "/manager/?realm=";
     return appUrl + realm;
   }
 }
@@ -527,8 +532,6 @@ class UsersPage extends BasePage {
 
 function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; manager: Manager }> {
   return async ({ page: basePage, manager }, use) => {
-    // TODO: TEST THIS
-    // Check that the manager has been initialized
     expect(manager).toBeInstanceOf(Manager);
     await use(new (managerPage.bind(null, basePage, manager))());
   };

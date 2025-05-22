@@ -1,6 +1,8 @@
 import type { TestType, Locator } from "@playwright/experimental-ct-core";
 import { Project } from "playwright/test";
 
+export { Project };
+
 type ComponentProps<Component extends HTMLElement> = Partial<Component>;
 type ComponentSlot = number | string | ComponentSlot[];
 type ComponentSlots = Record<string, ComponentSlot> & { default?: ComponentSlot };
@@ -32,5 +34,5 @@ export const test: TestType<{
 
 export { defineConfig, PlaywrightTestConfig, expect, devices } from "@playwright/experimental-ct-core";
 
-export const setupProjects: Project[];
+export const createAppSetupAndTeardown: (app: string) => Project[];
 export * from "./fixtures/page";

@@ -1,8 +1,8 @@
 // empty for now
 // wait for future development
 
-import { test } from "./fixtures/manager.js";
+import { test, userStatePath } from "./fixtures/manager.js";
 
-test.use({ storageState: "test/fixtures/data/user.json" });
+test.use({ storageState: userStatePath });
 
 test.fixme("Create a dashboard", async ({}) => {});

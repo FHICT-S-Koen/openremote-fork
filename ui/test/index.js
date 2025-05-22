@@ -3,19 +3,21 @@ import { defineConfig as originalDefineConfig } from "@playwright/test";
 import { test, expect, devices } from "@playwright/experimental-ct-core";
 import { createPlugin } from "./plugin";
 
-export const setupProjects = [
-  {
-    name: "setup",
-    testMatch: "**/*.setup.ts",
-    teardown: "cleanup",
-    worker: 1,
-  },
-  {
-    name: "cleanup",
-    testMatch: "**/*.cleanup.ts",
-    worker: 1,
-  },
-];
+export function createAppSetupAndTeardown(app) {
+  return [
+    {
+      name: `setup ${app}`,
+      testMatch: "**/*.setup.ts",
+      teardown: `cleanup ${app}`,
+      worker: 1,
+    },
+    {
+      name: `cleanup ${app}`,
+      testMatch: "**/*.cleanup.ts",
+      worker: 1,
+    },
+  ];
+}
 
 export * from "./fixtures/page";
 
