@@ -21,8 +21,7 @@ class Manager {
   public rules: number[] = [];
 
   constructor(readonly page: Page, readonly baseURL: string) {
-    // TODO: parameterize
-    this.managerHost = "http://localhost:8080";
+    this.managerHost = baseURL;
     rest.initialise(`${this.managerHost}/api/master/`);
     this.axios = rest.axiosInstance;
   }
@@ -267,12 +266,12 @@ class AssetsPage extends BasePage {
     this.manager.navigateToTab("Assets");
   }
 
-  // TODO: move to shared app & component fixture
+  // TODO: move to shared app & component fixture, when writing or-attribute-input tests.
   getAttributeLocator(attribute: string): Locator {
     return this.page.getByRole("row", { name: new RegExp(`\\b${attribute}\\b`) });
   }
 
-  // TODO: move to shared app & component fixture
+  // TODO: move to shared app & component fixture, when writing or-attribute-input tests.
   getConfigurationItemLocator(attribute: string, item: string): Locator {
     // match the sibling row i.e. the configuration item row of the attribute
     return this.getAttributeLocator(attribute)
@@ -531,7 +530,7 @@ function withManager<R>(managerPage: Function): TestFixture<R, { page: Page; man
     // TODO: TEST THIS
     // Check that the manager has been initialized
     expect(manager).toBeInstanceOf(Manager);
-    await use(new (managerPage.bind(null, basePage, manager) as VoidFunction)());
+    await use(new (managerPage.bind(null, basePage, manager))());
   };
 }
 
@@ -545,7 +544,6 @@ interface Fixtures {
 }
 
 export const test = base.extend<Fixtures>({
-  // TODO: handle baseURL
   manager: async ({ page, baseURL }, use) => await use(new Manager(page, baseURL!)),
   assetsPage: withManager(AssetsPage),
   realmsPage: withManager(RealmsPage),
