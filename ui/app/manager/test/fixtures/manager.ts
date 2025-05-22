@@ -26,7 +26,7 @@ class Manager {
   public rules: number[] = [];
 
   constructor(readonly page: Page, readonly baseURL: string) {
-    this.managerHost = baseURL;
+    this.managerHost = process.env.managerUrl || "http://localhost:8080";
     rest.initialise(`${this.managerHost}/api/master/`);
     this.axios = rest.axiosInstance;
   }
@@ -254,15 +254,11 @@ class Manager {
   }
 
   protected getAppUrl(realm: string) {
-    const appUrl = this.baseURL + "/manager/?realm=";
-    return appUrl + realm;
+    return `${new URL(this.baseURL).origin}/manager/?realm=${realm}`;
   }
 }
 
 class AssetsPage extends BasePage {
-  // private readonly inputBox: Locator;
-  // private readonly todoItems: Locator;
-
   constructor(readonly page: Page, private readonly manager: Manager) {
     super(page);
   }
