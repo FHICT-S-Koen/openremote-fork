@@ -25,10 +25,13 @@ function defineConfig(...configs) {
     ...original,
     "@playwright/test": {
       ...original["@playwright/test"],
-      plugins: [() => createPlugin()],
+      // Playwright Webpack plugin
+      plugins: [createPlugin],
+      // Required for Playwright UI to understand the test source code
       babelPlugins: [[require.resolve("./plugin/transform")]],
     },
     "@playwright/experimental-ct-core": {
+      // Used to attach components to the document
       registerSourceFile: require.resolve("./plugin/registerSource"),
     },
   };

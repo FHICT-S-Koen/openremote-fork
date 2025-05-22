@@ -88,13 +88,13 @@ function __pwCreateComponent(component) {
 window.playwrightMount = async (component, rootElement, hooksConfig) => {
   if (component.__pw_type === "jsx") throw new Error("JSX mount notation is not supported");
 
-  for (const hook of window["__pw_hooks_before_mount"] || []) await hook({ hooksConfig, App: component.type });
+  for (const hook of window.__pw_hooks_before_mount || []) await hook({ hooksConfig, App: component.type });
 
   const webComponent = __pwCreateComponent(component);
 
   rootElement.appendChild(webComponent);
 
-  for (const hook of window["__pw_hooks_after_mount"] || []) await hook({ hooksConfig, instance: webComponent });
+  for (const hook of window.__pw_hooks_after_mount || []) await hook({ hooksConfig, instance: webComponent });
 };
 
 window.playwrightUpdate = async (rootElement, component) => {
@@ -114,7 +114,6 @@ window.playwrightUnmount = async (rootElement) => {
 };
 
 // REMOVE
-//
 
 export function isImportRef(value) {
   return typeof value === "object" && value && value.__pw_type === "importRef";

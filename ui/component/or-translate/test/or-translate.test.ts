@@ -1,4 +1,4 @@
-import { OrTranslate } from "@openremote/or-translate";
+import { OrTranslate } from "../src/index";
 
 import { test, expect } from "@openremote/test";
 

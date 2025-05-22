@@ -1,16 +1,14 @@
-// playwright-webpack-plugin.js
-
 import fs from "node:fs";
 import path from "path";
 import webpack from "webpack";
 import WebpackDevServer from "webpack-dev-server";
 import HtmlWebpackPlugin from "html-webpack-plugin";
+
+// @ts-expect-error No declaration file available
 import { getStandardModuleRules } from "@openremote/util";
-import { removeDirAndLogToConsole } from "playwright/lib/util";
-import { debug } from "playwright-core/lib/utilsBundle";
-import { getPlaywrightVersion } from "playwright-core/lib/utils";
+// @ts-expect-error No declaration file available (internal Playwright module)
 import { isURLAvailable } from "playwright-core/lib/utils";
-import type { TestRunnerPlugin } from "playwright/lib/plugins";
+
 import type { FullConfig } from "playwright/types/testReporter";
 
 import {
@@ -22,12 +20,9 @@ import {
   transformIndexFile,
 } from "./webpackUtils";
 
-const log = debug("pw:webpack");
-const playwrightVersion = getPlaywrightVersion();
-
 let devServer: WebpackDevServer;
 
-export function createPlugin(): TestRunnerPlugin {
+export function createPlugin() {
   let config: FullConfig;
   let configDir: string;
 
@@ -66,7 +61,10 @@ export function createPlugin(): TestRunnerPlugin {
 
     clearCache: async () => {
       const dirs = await resolveDirs(configDir, config);
-      if (dirs) await removeDirAndLogToConsole(dirs.outDir);
+      if (dirs) {
+        console.log(`Removing ${await fs.promises.realpath(dirs.outDir)}`);
+        await fs.promises.rm(dirs.outDir, { recursive: true, force: true });
+      }
     },
 
     startDevServer: async () => {
@@ -96,9 +94,10 @@ async function buildBundle(config: FullConfig, configDir: string): Promise<{ web
 
   const componentRegistry: Map<string, ImportInfo> = new Map();
   const componentsByImportingFile = new Map<string, string[]>();
+  // Populate component registry based on the tests' component imports.
   await populateComponentsFromTests(componentRegistry, componentsByImportingFile);
 
-  // TODO: Check properly invalidate cache before writing to cache dir
+  // Consider including buildInfo in the cache dir to be able to know how to invalidate the cache dir
   const registerSource = fs.readFileSync(registerSourceFile, "utf-8");
   const indexSourcePath = path.join(dirs.templateDir, "index.js");
   const transformedIndex = transformIndexFile(
