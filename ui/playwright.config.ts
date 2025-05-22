@@ -1,26 +1,27 @@
 import { defineConfig, devices, createAppSetupAndTeardown, Project } from "@openremote/test";
-const { CI, DEV } = process.env;
+const { CI, DEV, managerUrl } = process.env;
 
 const browsers: Project[] = [
   {
     name: "chromium",
     use: { ...devices["Desktop Chrome"] },
   },
-  {
-    name: "firefox",
-    use: { ...devices["Desktop Firefox"] },
-  },
-  {
-    name: "webkit",
-    use: { ...devices["Desktop Safari"] },
-  },
+  // {
+  //   name: "firefox",
+  //   use: { ...devices["Desktop Firefox"] },
+  // },
+  // {
+  //   name: "webkit",
+  //   use: { ...devices["Desktop Safari"] },
+  // },
 ];
 
 const orProjects: Project[] = [
   {
-    name: "components",
+    name: "component",
     testDir: "component",
     fullyParallel: true,
+    use: { ct: true, baseURL: "http://localhost:3100" },
   },
   {
     name: "manager",
@@ -32,9 +33,16 @@ const orProjects: Project[] = [
 ];
 
 const projects: Project[] = [
-  ...createAppSetupAndTeardown("manager"),
+  ...createAppSetupAndTeardown("manager").map((project) => ({
+    ...project,
+    use: { ...project.use },
+  })),
   ...browsers.flatMap((browser) =>
-    orProjects.map((project) => ({ ...project, name: `${project.name} ${browser.name}`, use: browser.use }))
+    orProjects.map((project) => ({
+      ...project,
+      name: `${project.name} ${browser.name}`,
+      use: { ...browser.use, ...project.use },
+    }))
   ),
 ];
 
@@ -51,7 +59,7 @@ export default defineConfig({
   reporter: [["html"]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
-    /* Base URL to use in actions like `await page.goto('/')`. */
+    // Defaults to the default Manager Docker container port as that significantly speeds up the tests compared to serving the frontend with Webpack
     baseURL: process.env.managerUrl || DEV ? "http://localhost:9000" : "http://localhost:8080",
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "retain-on-failure",

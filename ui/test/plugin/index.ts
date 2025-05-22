@@ -77,6 +77,7 @@ export function createPlugin() {
 async function buildBundle(config: FullConfig, configDir: string): Promise<{ webpackConfig: any } | null> {
   const { registerSourceFile } = frameworkConfig(config);
   const endpoint = resolveEndpoint(config);
+  if (!endpoint) return null;
 
   const protocol = endpoint.https ? "https:" : "http:";
   const url = new URL(`${protocol}//${endpoint.host}:${endpoint.port}`);

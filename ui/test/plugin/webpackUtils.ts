@@ -12,6 +12,7 @@ import type webpack from "webpack";
 import type { Configuration as WebpackConfig } from "webpack";
 
 export type CtConfig = BasePlaywrightTestConfig["use"] & {
+  ct?: boolean;
   ctPort?: number;
   ctTemplateDir?: string;
   ctCacheDir?: string;
@@ -31,8 +32,13 @@ export type ComponentDirs = {
   templateDir: string;
 };
 
+function resolveCtConfig(config: FullConfig): CtConfig | undefined {
+  return config.projects.find((project) => (project.use as CtConfig).ct)?.use;
+}
+
 export async function resolveDirs(configDir: string, config: FullConfig): Promise<ComponentDirs | null> {
-  const use = config.projects[0].use as CtConfig;
+  const use = resolveCtConfig(config);
+  if (!use) return null;
   const relativeTemplateDir = use.ctTemplateDir || "playwright";
   const templateDir = await fs.promises.realpath(path.join(configDir, relativeTemplateDir)).catch(() => undefined);
   if (!templateDir) return null;
@@ -47,7 +53,8 @@ export async function resolveDirs(configDir: string, config: FullConfig): Promis
 }
 
 export function resolveEndpoint(config: FullConfig) {
-  const use = config.projects[0].use as CtConfig;
+  const use = resolveCtConfig(config);
+  if (!use) return null;
   const baseURL = new URL(use.baseURL || "http://localhost");
   return {
     https: baseURL.protocol.startsWith("https:"),
