@@ -205,9 +205,9 @@ jobs:
         if: steps.backend-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
-      - name: Set skip UI tests
-        id: skip-ui-tests
-        if: steps.ui-files-changed.outputs.any_modified != 'true'
+      - name: Set skip UI component tests
+        id: skip-ui-component-tests
+        # if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
       - name: Check if main repo
@@ -431,12 +431,12 @@ jobs:
 
       - name: Define UI component test command
         id: test-ui-components-command
-        run: echo "value=npm run ct" >> $GITHUB_OUTPUT
-
-      - name: Define UI test command
-        id: test-ui-command
-        if: ${{ steps.skip-ui-tests.outputs.value != 'true' }}
+        # if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
         run: echo "value=npm test" >> $GITHUB_OUTPUT
+
+      - name: Define UI end-to-end test command
+        id: e2e-test-command
+        run: echo "value=npm run e2e" >> $GITHUB_OUTPUT
 
       - name: Define manager docker build command
         id: manager-docker-command
@@ -577,7 +577,8 @@ jobs:
           echo 'Deployment commit SHA: ${{ steps.deployment-docker-command.outputs.refTag }}'
           echo 'Deployments: ${{ steps.deployments.outputs.value }}'
           echo 'Test backend command: ${{ steps.test-backend-command.outputs.value }}'
-          echo 'Test UI command: ${{ steps.test-ui-command.outputs.value }}'
+          echo 'Test UI components command: ${{ steps.test-ui-components-command.outputs.value }}'
+          echo 'End-To-End test command: ${{ steps.e2e-test-command.outputs.value }}'
           echo 'Manager docker build command: ${{ steps.manager-docker-command.outputs.value }}'
           echo 'Manager docker image: ${{ steps.manager-docker-command.outputs.managerDockerImage }}'
           echo 'Maven publish command: ${{ steps.maven-publish-command.outputs.value }}'
@@ -590,19 +591,10 @@ jobs:
           echo "************************************************************"
 
       - name: Pull docker images
-        if: ${{ steps.test-backend-command.outputs.value != '' || steps.test-ui-command.outputs.value != '' }}
+        if: ${{ steps.test-backend-command.outputs.value != '' || steps.e2e-test-command.outputs.value != '' }}
         run: |
-          # Only need keycloak and postgres services for backend testing
-          if [ -z $TEST_UI_COMMAND ]; then
-            composeProfile='profile/dev-testing.yml'
-          else
-            composeProfile='profile/dev-ui.yml'
-          fi
-
-          # Pull the images
-          docker compose -f $composeProfile pull
-        env:
-          TEST_UI_COMMAND: ${{ steps.test-ui-command.outputs.value }}
+          # Only need keycloak and postgres services for backend and end-to-end testing
+          docker compose -f profile/dev-testing.yml pull
 
       # Use docker layer caching to speed up image building
       - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
@@ -663,7 +655,7 @@ jobs:
         #continue-on-error: true
 
       - name: Archive backend test results
-        if: false
+        if: always()
         uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: backend-test-results
@@ -711,16 +703,14 @@ jobs:
           INPUTS_AND_SECRETS: ${{ toJSON(steps.inputs-and-secrets.outputs) }}
         timeout-minutes: 20
 
+      - name: Run install playwright browser(s)
+        if: always()
+        run: npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps chromium
+        timeout-minutes: 20
+
       - name: Run frontend component tests
         if: steps.test-ui-components-command.outputs.value != ''
-        run: |
-          # Install playwright browser(s)
-          npx playwright@$(npm test -- --version | xargs | awk '{ print $NF }') install --with-deps chromium
-
-          # Run component tests
-          ${{ steps.test-ui-components-command.outputs.value }}
-        env:
-          IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
+        run: ${{ steps.test-ui-components-command.outputs.value }}
         timeout-minutes: 20
         # continue-on-error: true
 
@@ -737,8 +727,7 @@ jobs:
           ${{ steps.manager-docker-command.outputs.value }}
 
       - name: Run e2e tests
-        # if: steps.test-ui-command.outputs.value != ''
-        if: always()
+        if: steps.e2e-test-command.outputs.value != ''
         run: |
           composeProfile='profile/dev-ui.yml'
 
@@ -749,8 +738,11 @@ jobs:
           # Start the stack
           MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
+          # TODO: REMOVE DEBUGGING
+          docker ps -a
+
           # Run the tests
-          ${{ steps.test-ui-command.outputs.value }}
+          ${{ steps.e2e-test-command.outputs.value }}
         env:
           IS_MAIN_REPO: ${{ steps.is_main_repo.outputs.value }}
           MANAGER_TAG: ${{ steps.manager-docker-command.outputs.refTag }}
