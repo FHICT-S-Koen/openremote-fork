@@ -4,10 +4,11 @@ import { users } from "./fixtures/data/users";
 import permissions from "./fixtures/data/permissions";
 
 setup("Login as admin", async ({ page, manager, context }) => {
+  // Wait for the container to be ready
+  await page.waitForURL(manager.baseURL, { timeout: 30_000 });
   await manager.goToRealmStartPage("master");
   await manager.login("admin");
   await page.waitForURL("**/manager/**");
-  await page.waitForTimeout(2000);
   await context.storageState({ path: adminStatePath });
 });
 
