@@ -191,7 +191,7 @@ jobs:
       # Check which files have changed to only run appropriate tests and checks
       - name: UI files changed
         id: ui-files-changed
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'push'
         uses: tj-actions/changed-files@48d8f15b2aaa3d255ca5af3eba4870f807ce6b3c # v45
         with:
           files: |
@@ -207,7 +207,7 @@ jobs:
 
       - name: Set skip UI component tests
         id: skip-ui-component-tests
-        # if: steps.ui-files-changed.outputs.any_modified != 'true'
+        if: steps.ui-files-changed.outputs.any_modified != 'true'
         run: echo "value=true" >> $GITHUB_OUTPUT
 
       - name: Check if main repo
@@ -431,7 +431,7 @@ jobs:
 
       - name: Define UI component test command
         id: test-ui-components-command
-        # if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
+        if: ${{ steps.skip-ui-component-tests.outputs.value != 'true' }}
         run: echo "value=npm test" >> $GITHUB_OUTPUT
 
       - name: Define UI end-to-end test command
@@ -738,8 +738,38 @@ jobs:
           # Start the stack
           MANAGER_VERSION=$MANAGER_TAG docker compose -f $composeProfile up -d --no-build
 
-          # TODO: REMOVE DEBUGGING
-          docker ps -a
+          echo "Waiting for up to 5mins for all services to be healthy"
+          COUNT=1
+          STATUSES_OK=false
+          IFS=$'\n'
+          while [ "$STATUSES_OK" != 'true' ] && [ $COUNT -le 60 ]; do
+
+            echo "Checking service health...attempt $COUNT"
+            STATUSES=$(docker ps --format "{{.Names}} {{.Status}}" | grep profile)
+            STATUSES_OK=true
+
+            for STATUS in $STATUSES; do
+              if [[ "$STATUS" != *"healthy"* ]]; then
+                STATUSES_OK=false
+                break
+              fi
+            done
+
+            if [ "$STATUSES_OK" == 'true' ]; then
+                break
+            fi
+
+            sleep 5
+            COUNT=$((COUNT+1))
+          done
+
+          if [ "$STATUSES_OK" == 'true' ]; then
+            echo "All services are healthy"
+          else
+            echo "One or more services are unhealthy"
+            docker ps -a
+            exit 1
+          fi
 
           # Run the tests
           ${{ steps.e2e-test-command.outputs.value }}
