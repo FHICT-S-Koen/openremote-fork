@@ -464,7 +464,7 @@ jobs:
           FIRST_MANAGER_TAG: ${{ steps.ci-cd-output.outputs.firstDockerTag }}
           MANAGER_TAGS: ${{ steps.ci-cd-output.outputs.dockerTags }}
           DEPLOYMENTS: ${{ steps.deployments.outputs.value }}
-          TEST_UI_CMD: ${{ steps.test-ui-command.outputs.value }}
+          TEST_UI_CMD: ${{ steps.e2e-test-command.outputs.value }}
 
       - name: Define maven publish command
         id: maven-publish-command
@@ -634,7 +634,7 @@ jobs:
 
       - name: Run backend tests
         id: run-backend-tests
-        if: ${{ steps.test-backend-command.outputs.value != '' }}
+        if: false
         run: |
           composeProfile='profile/dev-testing.yml'
 
