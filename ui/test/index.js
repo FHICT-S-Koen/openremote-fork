@@ -41,6 +41,6 @@ function defineCtConfig(...configs) {
 // Must extend in the root of the package
 const ct = base.extend(componentFixtures);
 
+export * from "./fixtures/app";
 export * from "./fixtures/component";
-export * from "./fixtures/page";
 export { test, ct, expect, devices, defineConfig, defineCtConfig, createAppSetupAndTeardown };
