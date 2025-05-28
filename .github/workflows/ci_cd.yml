@@ -268,16 +268,16 @@ jobs:
         id: get-version-details
         run: |
           set -o pipefail # exit build with error when pipes fail
-          ./gradlew currentVersion | tee /tmp/currentVersion
-          versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
-          version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
-          isRelease=false
-          if [ "$version" == "$versionWithQualifier" ]; then
-            isRelease=true
-          fi
-          echo "version=$version" >> $GITHUB_OUTPUT
-          echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
-          echo "is_release=$isRelease" >> $GITHUB_OUTPUT
+        # ./gradlew currentVersion | tee /tmp/currentVersion
+        # versionWithQualifier=$(grep "Project version" /tmp/currentVersion | sed 's#Project version: ##')
+        # version=$(sed -E 's#-.+##' <<< $versionWithQualifier)
+        # isRelease=false
+        # if [ "$version" == "$versionWithQualifier" ]; then
+        #   isRelease=true
+        # fi
+        # echo "version=$version" >> $GITHUB_OUTPUT
+        # echo "version_with_qualifier=$versionWithQualifier" >> $GITHUB_OUTPUT
+        # echo "is_release=$isRelease" >> $GITHUB_OUTPUT
 
       - name: Process ci_cd.json file
         if: ${{ steps.check_cicd_json.outputs.files_exists == 'true' && (github.ref_type == 'tag' || (github.event_name != 'workflow_dispatch' && github.event_name != 'pull_request')) }}
@@ -597,10 +597,10 @@ jobs:
           docker compose -f profile/dev-testing.yml pull
 
       # Use docker layer caching to speed up image building
-      - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
-        if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
-        # Ignore the failure of a step and avoid terminating the job.
-        continue-on-error: true
+      # - uses: jpribyl/action-docker-layer-caching@c632825d12ec837065f49726ea27ddd40bcc7894 # v0.1.1
+      #   if: ${{ steps.manager-docker-command.outputs.value != '' || steps.deployment-docker-command.outputs.value != '' }}
+      #   # Ignore the failure of a step and avoid terminating the job.
+      #   continue-on-error: true
 
       - name: Update version in package.json files
         id: update-package-json-files
