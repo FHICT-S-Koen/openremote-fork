@@ -154,6 +154,7 @@ export function getSchemaPicker(rootSchema: JsonSchema, resolvedSchema: JsonSche
 export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: JsonSchema, state?: JsonFormsState): [string | undefined, string | undefined] {
     let title: string | undefined;
 
+    let ref = Boolean(schema.$ref)
     if (schema.$ref) {
         title = getLabelFromScopeOrRef(schema.$ref);
         schema = Resolve.schema(schema, '', rootSchema);
@@ -165,6 +166,9 @@ export function findSchemaTitleAndDescription(schema: JsonSchema, rootSchema: Js
     // } 
     if (state && title) {
       const t = getTranslator()(state);
+      if (ref) {
+        return [t("definitions." + title + ".label"), t("definitions." + title + ".description")];
+      }
       return [t(title + ".label"), t(title + ".description")];
     }
 
