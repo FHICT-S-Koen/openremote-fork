@@ -58,7 +58,7 @@ public class HarvestRobotAsset extends Asset<HarvestRobotAsset> {
                 ValueType.DIRECTION);
         public static final AttributeDescriptor<Double> SPEED = new AttributeDescriptor<>("speed",
                 ValueType.POSITIVE_NUMBER)
-                .withUnits(UNITS_KILO, UNITS_METRE, UNITS_PER, UNITS_HOUR);
+                .withUnits(Units.KILO, Units.METRE, Units.PER, Units.HOUR);
 
         public static final AttributeDescriptor<Integer> HARVESTED_SESSION = new AttributeDescriptor<>("harvestedSession",
                 ValueType.POSITIVE_INTEGER);
