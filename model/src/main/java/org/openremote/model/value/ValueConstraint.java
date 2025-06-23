@@ -20,6 +20,8 @@
 package org.openremote.model.value;
 
 import com.fasterxml.jackson.annotation.*;
+import com.kjetland.jackson.jsonSchema.annotations.JsonSchemaInject;
+
 import org.openremote.model.util.ValueUtil;
 
 import java.io.Serializable;
@@ -380,6 +382,12 @@ public abstract class ValueConstraint implements Serializable {
      * accepts null values.
      */
     @JsonTypeName("allowedValues")
+    @JsonSchemaInject(json = 
+        """
+            { "layout:table": [ "allowedValues", "allowedValueNames" ] },
+        """
+            // {  "decorators": { import: true, export: true, format: csv } }
+    )
     public static class AllowedValues extends ValueConstraint {
         @jakarta.validation.constraints.NotNull
         Object[] allowedValues;
